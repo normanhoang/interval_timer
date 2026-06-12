@@ -1,98 +1,124 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCallback } from "react";
+import { Text, View } from "react-native";
+import Animated, { FadeIn, useAnimatedRef } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Sortable, { SortableGridRenderItem } from "react-native-sortables";
+import { Glass } from "../../components/Glass";
+import { PressableScale } from "../../components/PressableScale";
+import { PRIMARY } from "../../lib/colors";
+import { useThemeColors } from "../../lib/theme";
+import { formatSeconds, totalDuration } from "../../lib/timer";
+import { Workout } from "../../lib/types";
+import { useWorkouts } from "../../lib/WorkoutsContext";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
+function WorkoutCard({ workout }: { workout: Workout }) {
+  const router = useRouter();
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
+    <PressableScale onPress={() => router.push(`/workout/${workout.id}`)}>
+      <View className="rounded-3xl border border-white/60 bg-white/50 p-4 dark:border-white/10 dark:bg-white/[0.07]">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="text-lg font-semibold text-ink dark:text-ink-dark">
+              {workout.name}
+            </Text>
+            <Text className="mt-0.5 text-sm text-ink/50 dark:text-ink-dark/50">
+              {formatSeconds(totalDuration(workout))} · {workout.repeats}{" "}
+              {workout.repeats === 1 ? "round" : "rounds"}
+            </Text>
+          </View>
+          <PressableScale onPress={() => router.push(`/run/${workout.id}`)} hitSlop={6}>
+            <View
+              className="h-14 w-14 items-center justify-center rounded-full"
+              style={{ backgroundColor: PRIMARY }}
+            >
+              <Ionicons name="play" size={22} color="white" style={{ marginLeft: 2 }} />
+            </View>
+          </PressableScale>
+        </View>
+        <View className="mt-3 flex-row flex-wrap gap-1.5">
+          {workout.intervals.map((interval) => (
+            <View
+              key={interval.id}
+              className="flex-row items-center gap-1.5 rounded-full border border-white/60 bg-white/40 px-2.5 py-1 dark:border-white/10 dark:bg-white/[0.08]"
+            >
+              <View
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: interval.color }}
               />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+              <Text className="text-xs font-medium text-ink/70 dark:text-ink-dark/70">
+                {interval.label} {formatSeconds(interval.seconds)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </PressableScale>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+export default function WorkoutsScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const theme = useThemeColors();
+  const { workouts, hydrated, reorderWorkouts } = useWorkouts();
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+
+  const renderItem = useCallback<SortableGridRenderItem<Workout>>(
+    ({ item }) => <WorkoutCard workout={item} />,
+    [],
+  );
+
+  if (!hydrated) return <View className="flex-1" />;
+
+  return (
+    <Animated.View entering={FadeIn} className="flex-1" style={{ paddingTop: insets.top + 8 }}>
+      <View className="flex-row items-end justify-between px-6 pb-4">
+        <View>
+          <Text className="text-xs font-semibold uppercase tracking-widest text-ink/40 dark:text-ink-dark/40">
+            HIIT Timer
+          </Text>
+          <Text className="text-4xl font-bold text-ink dark:text-ink-dark">Workouts</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <PressableScale onPress={() => router.push("/settings")} hitSlop={6}>
+            <Glass radius={22} bordered className="h-11 w-11 items-center justify-center">
+              <Ionicons name="settings-outline" size={19} color={theme.ink} />
+            </Glass>
+          </PressableScale>
+          <PressableScale onPress={() => router.push("/workout/new")}>
+            <Glass radius={22} bordered className="flex-row items-center gap-1 px-4 py-2.5">
+              <Ionicons name="add" size={18} color={theme.ink} />
+              <Text className="font-semibold text-ink dark:text-ink-dark">New</Text>
+            </Glass>
+          </PressableScale>
+        </View>
+      </View>
+      <Animated.ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}
+      >
+        <Sortable.Grid
+          columns={1}
+          data={workouts}
+          keyExtractor={(workout) => workout.id}
+          renderItem={renderItem}
+          rowGap={12}
+          onDragEnd={({ data }) => reorderWorkouts(data)}
+          scrollableRef={scrollRef}
+        />
+        {workouts.length === 0 && (
+          <View className="items-center rounded-3xl border border-white/60 bg-white/50 p-8 dark:border-white/10 dark:bg-white/[0.07]">
+            <Text className="text-base font-medium text-ink/60 dark:text-ink-dark/60">
+              No workouts yet
+            </Text>
+            <Text className="mt-1 text-center text-sm text-ink/40 dark:text-ink-dark/40">
+              Tap “New” to build your first interval workout.
+            </Text>
+          </View>
+        )}
+      </Animated.ScrollView>
+    </Animated.View>
+  );
+}
