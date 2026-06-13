@@ -10,7 +10,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-/** Bottom-pinned sheet for the duration wheels, with a dimmed dismissable backdrop. */
+/** Bottom-pinned sheet (duration wheels, color palette), with a dimmed dismissable backdrop. */
 export function DurationSheet({ title, onClose, children }: Props) {
   const insets = useSafeAreaInsets();
 

@@ -17,8 +17,9 @@ import { AppBackground } from "../../components/AppBackground";
 import { DurationSheet } from "../../components/DurationSheet";
 import { DurationWheel } from "../../components/DurationWheel";
 import { Glass } from "../../components/Glass";
+import { IntervalMixBar } from "../../components/IntervalMixBar";
 import { PressableScale } from "../../components/PressableScale";
-import { nextIntervalColor, REST_COLOR, WORK_COLOR } from "../../lib/colors";
+import { INK, INTERVAL_COLORS, isLightColor, REST_COLOR, WORK_COLOR } from "../../lib/colors";
 import { useThemeColors } from "../../lib/theme";
 import { formatSeconds, totalDuration } from "../../lib/timer";
 import { Interval } from "../../lib/types";
@@ -47,6 +48,7 @@ export default function WorkoutEditorScreen() {
     existing ? existing.intervals.map((i) => ({ ...i })) : defaultIntervals(),
   );
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [colorPickingId, setColorPickingId] = useState<string | null>(null);
 
   const patchInterval = useCallback((intervalId: string, patch: Partial<Interval>) => {
     setIntervals((prev) => prev.map((i) => (i.id === intervalId ? { ...i, ...patch } : i)));
@@ -120,10 +122,7 @@ export default function WorkoutEditorScreen() {
               <Ionicons name="reorder-three" size={22} color={theme.inkMuted} />
             </View>
           </Sortable.Handle>
-          <Pressable
-            onPress={() => patchInterval(interval.id, { color: nextIntervalColor(interval.color) })}
-            hitSlop={6}
-          >
+          <Pressable onPress={() => setColorPickingId(interval.id)} hitSlop={6}>
             <View
               className="h-7 w-7 rounded-full border-2 border-white/80 dark:border-white/30"
               style={{ backgroundColor: interval.color }}
@@ -153,6 +152,7 @@ export default function WorkoutEditorScreen() {
   );
 
   const editingInterval = intervals.find((i) => i.id === editingId);
+  const colorPickingInterval = intervals.find((i) => i.id === colorPickingId);
 
   const closeDurationSheet = () => {
     if (editingInterval && editingInterval.seconds === 0) {
@@ -258,6 +258,9 @@ export default function WorkoutEditorScreen() {
               </View>
             </PressableScale>
 
+            <View className="mt-2 px-1">
+              <IntervalMixBar intervals={intervals} height={8} />
+            </View>
             <Text className="mt-1 text-center text-sm font-medium text-ink/50 dark:text-ink-dark/50">
               Total: {formatSeconds(total)} · {repeats} {repeats === 1 ? "round" : "rounds"}
             </Text>
@@ -279,6 +282,46 @@ export default function WorkoutEditorScreen() {
             seconds={editingInterval.seconds}
             onChange={(seconds) => patchInterval(editingInterval.id, { seconds })}
           />
+        </DurationSheet>
+      )}
+
+      {colorPickingInterval && (
+        <DurationSheet
+          title={`${colorPickingInterval.label || "Interval"} color`}
+          onClose={() => setColorPickingId(null)}
+        >
+          <View className="mb-2 mt-5 flex-row justify-between">
+            {INTERVAL_COLORS.map((color) => {
+              const active = colorPickingInterval.color === color;
+              return (
+                <PressableScale
+                  key={color}
+                  onPress={() => {
+                    patchInterval(colorPickingInterval.id, { color });
+                    setColorPickingId(null);
+                  }}
+                  hitSlop={6}
+                >
+                  <View
+                    className={
+                      active
+                        ? "h-12 w-12 items-center justify-center rounded-full border-[3px] border-primary"
+                        : "h-12 w-12 items-center justify-center rounded-full border-2 border-white/80 dark:border-white/30"
+                    }
+                    style={{ backgroundColor: color }}
+                  >
+                    {active && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={isLightColor(color) ? INK : "white"}
+                      />
+                    )}
+                  </View>
+                </PressableScale>
+              );
+            })}
+          </View>
         </DurationSheet>
       )}
     </View>

@@ -7,8 +7,9 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated";
+import { INTERVAL_COLORS, PRIMARY } from "../lib/colors";
 
-const COLORS = ["#FBCFE8", "#FED7AA", "#BBF7D0", "#BAE6FD", "#DDD6FE", "#FEF3C7", "#A78BFA"];
+const COLORS = [...INTERVAL_COLORS, PRIMARY];
 
 interface Spark {
   id: number;

@@ -7,13 +7,13 @@ module.exports = {
       colors: {
         ink: { DEFAULT: "#3B3556", dark: "#EAE6F7" },
         primary: "#A78BFA",
-        pastel: {
-          pink: "#FBCFE8",
-          peach: "#FED7AA",
-          mint: "#BBF7D0",
-          sky: "#BAE6FD",
-          lavender: "#DDD6FE",
-          butter: "#FEF3C7",
+        interval: {
+          coral: "#F38181",
+          yellow: "#FCE38A",
+          mint: "#EAFFD0",
+          aqua: "#95E1D3",
+          sky: "#A8D8EA",
+          lavender: "#C9B6E4",
         },
       },
     },

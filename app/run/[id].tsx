@@ -3,15 +3,21 @@ import { useKeepAwake } from "expo-keep-awake";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { Alert, Text, useWindowDimensions, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBackground } from "../../components/AppBackground";
 import { Confetti } from "../../components/Confetti";
 import { Glass } from "../../components/Glass";
 import { PressableScale } from "../../components/PressableScale";
 import { ProgressRing } from "../../components/ProgressRing";
+import { PREROLL_COLOR } from "../../lib/colors";
 import { randomEncouragement } from "../../lib/encouragements";
-import { PRIMARY } from "../../lib/colors";
 import { cueCountdown, cueFinish, cueSegmentChange, initCues, releaseCues } from "../../lib/cues";
 import { useSettings } from "../../lib/SettingsContext";
 import { useThemeColors } from "../../lib/theme";
@@ -49,6 +55,16 @@ export default function RunScreen() {
     initCues();
     return () => releaseCues();
   }, []);
+
+  // Pop the big number on each of a segment's last three seconds.
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    if (timer.phase === "running" && timer.remaining > 0 && timer.remaining <= 3) {
+      pulse.value = 1.08;
+      pulse.value = withTiming(1, { duration: 340, easing: Easing.out(Easing.cubic) });
+    }
+  }, [timer.remaining, timer.phase, pulse]);
+  const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
   const recordedRef = useRef(false);
   useEffect(() => {
@@ -147,7 +163,7 @@ export default function RunScreen() {
                 size={ringSize}
                 strokeWidth={16}
                 progress={timer.fraction}
-                color={segment?.color ?? "#DDD6FE"}
+                color={segment?.color ?? PREROLL_COLOR}
               >
                 <Text className="text-xs font-semibold uppercase tracking-widest text-ink/40 dark:text-ink-dark/40">
                   {paused
@@ -156,26 +172,37 @@ export default function RunScreen() {
                       ? `Round ${segment.round}/${segment.rounds}`
                       : ""}
                 </Text>
-                <Text className="text-7xl font-bold tabular-nums text-ink dark:text-ink-dark">
-                  {formatSeconds(timer.remaining)}
-                </Text>
+                <Animated.View style={pulseStyle}>
+                  <Text className="text-7xl font-bold tabular-nums text-ink dark:text-ink-dark">
+                    {formatSeconds(timer.remaining)}
+                  </Text>
+                </Animated.View>
                 <Text className="text-lg font-semibold text-ink/60 dark:text-ink-dark/60">
                   {segment?.label ?? ""}
                 </Text>
               </ProgressRing>
-              <Text className="mt-6 text-base font-medium text-ink/50 dark:text-ink-dark/50">
-                {next ? `Next: ${next.label} · ${formatSeconds(next.seconds)}` : "Last interval"}
-              </Text>
+              <View className="mt-6 flex-row items-center gap-2 rounded-full border border-white/60 bg-white/40 px-4 py-2 dark:border-white/10 dark:bg-white/[0.08]">
+                {next && (
+                  <View
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: next.color }}
+                  />
+                )}
+                <Text className="text-base font-medium text-ink/60 dark:text-ink-dark/60">
+                  {next ? `Next: ${next.label} · ${formatSeconds(next.seconds)}` : "Last interval"}
+                </Text>
+              </View>
             </View>
 
             <View className="mb-6 gap-1.5">
-              <View className="h-2 overflow-hidden rounded-full bg-white/50 dark:bg-white/[0.12]">
+              <View className="h-2.5 flex-row overflow-hidden rounded-full bg-white/50 dark:bg-white/[0.12]">
+                {segments.map((s, i) => (
+                  <View key={i} style={{ flex: s.seconds, backgroundColor: s.color }} />
+                ))}
                 <View
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${Math.min(100, Math.max(0, elapsedFraction * 100))}%`,
-                    backgroundColor: PRIMARY,
-                  }}
+                  pointerEvents="none"
+                  className="absolute bottom-0 right-0 top-0 bg-white/60 dark:bg-black/40"
+                  style={{ width: `${Math.min(100, Math.max(0, (1 - elapsedFraction) * 100))}%` }}
                 />
               </View>
               <Text className="text-center text-xs font-medium text-ink/40 dark:text-ink-dark/40">

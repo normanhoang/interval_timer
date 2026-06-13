@@ -9,9 +9,11 @@ import sharp from "sharp";
 const SIZE = 1024;
 const C = SIZE / 2;
 
-// Keep in sync with lib/colors.ts / tailwind.config.js
+// Keep in sync with lib/colors.ts / tailwind.config.js.
+// Exception: the app's pale green (#EAFFD0) vanishes against the frosted
+// white disc at icon sizes, so the icon uses a deeper green stand-in.
 const GRADIENT = ["#FFF1F2", "#EDE9FE", "#E0F2FE"];
-const INTERVAL_COLORS = ["#FBCFE8", "#FED7AA", "#BBF7D0", "#BAE6FD", "#DDD6FE", "#FEF3C7"];
+const INTERVAL_COLORS = ["#F38181", "#FCE38A", "#B5E48C", "#95E1D3", "#A8D8EA", "#C9B6E4"];
 const PRIMARY = "#A78BFA";
 
 function polar(cx, cy, r, deg) {

@@ -6,6 +6,7 @@ import Animated, { FadeIn, useAnimatedRef } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Sortable, { SortableGridRenderItem } from "react-native-sortables";
 import { Glass } from "../../components/Glass";
+import { IntervalMixBar } from "../../components/IntervalMixBar";
 import { PressableScale } from "../../components/PressableScale";
 import { PRIMARY } from "../../lib/colors";
 import { useThemeColors } from "../../lib/theme";
@@ -37,7 +38,10 @@ function WorkoutCard({ workout }: { workout: Workout }) {
             </View>
           </PressableScale>
         </View>
-        <View className="mt-3 flex-row flex-wrap gap-1.5">
+        <View className="mt-3">
+          <IntervalMixBar intervals={workout.intervals} />
+        </View>
+        <View className="mt-2.5 flex-row flex-wrap gap-1.5">
           {workout.intervals.map((interval) => (
             <View
               key={interval.id}
@@ -110,6 +114,9 @@ export default function WorkoutsScreen() {
         />
         {workouts.length === 0 && (
           <View className="items-center rounded-3xl border border-white/60 bg-white/50 p-8 dark:border-white/10 dark:bg-white/[0.07]">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-white/60 dark:bg-white/[0.12]">
+              <Ionicons name="barbell-outline" size={26} color={theme.inkMuted} />
+            </View>
             <Text className="text-base font-medium text-ink/60 dark:text-ink-dark/60">
               No workouts yet
             </Text>

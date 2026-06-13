@@ -10,10 +10,14 @@ import { previewAlert } from "../lib/cues";
 import { ThemeSetting, useSettings } from "../lib/SettingsContext";
 import { useThemeColors } from "../lib/theme";
 
-const THEME_OPTIONS: { value: ThemeSetting; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const THEME_OPTIONS: {
+  value: ThemeSetting;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: "system", label: "System", icon: "phone-portrait-outline" },
+  { value: "light", label: "Light", icon: "sunny-outline" },
+  { value: "dark", label: "Dark", icon: "moon-outline" },
 ];
 
 function ToggleRow({
@@ -89,10 +93,15 @@ export default function SettingsScreen() {
                   onPress={() => setTheme(option.value)}
                   className={
                     active
-                      ? "flex-1 items-center rounded-full border border-white/70 bg-white/80 py-2.5 dark:border-white/20 dark:bg-white/[0.16]"
-                      : "flex-1 items-center rounded-full border border-white/50 bg-white/30 py-2.5 dark:border-white/10 dark:bg-white/[0.04]"
+                      ? "flex-1 flex-row items-center justify-center gap-1.5 rounded-full border border-white/70 bg-white/80 py-2.5 dark:border-white/20 dark:bg-white/[0.16]"
+                      : "flex-1 flex-row items-center justify-center gap-1.5 rounded-full border border-white/50 bg-white/30 py-2.5 dark:border-white/10 dark:bg-white/[0.04]"
                   }
                 >
+                  <Ionicons
+                    name={option.icon}
+                    size={14}
+                    color={active ? theme.ink : theme.inkMuted}
+                  />
                   <Text
                     className={
                       active

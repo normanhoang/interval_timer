@@ -1,4 +1,4 @@
-import { addMonths, dayKey, monthMatrix } from "../calendar";
+import { addMonths, dayKey, monthMatrix, streakLength } from "../calendar";
 
 describe("dayKey", () => {
   it("formats local dates with zero padding", () => {
@@ -34,6 +34,35 @@ describe("monthMatrix", () => {
 
   it("handles leap years", () => {
     expect(monthMatrix(2024, 1).flat().filter(Boolean)).toHaveLength(29);
+  });
+});
+
+describe("streakLength", () => {
+  const today = new Date(2026, 5, 12);
+
+  it("counts consecutive days ending today", () => {
+    const days = new Set(["2026-06-10", "2026-06-11", "2026-06-12"]);
+    expect(streakLength(days, today)).toBe(3);
+  });
+
+  it("keeps yesterday's streak alive before today's session", () => {
+    const days = new Set(["2026-06-10", "2026-06-11"]);
+    expect(streakLength(days, today)).toBe(2);
+  });
+
+  it("breaks on a gap", () => {
+    const days = new Set(["2026-06-08", "2026-06-09", "2026-06-11", "2026-06-12"]);
+    expect(streakLength(days, today)).toBe(2);
+  });
+
+  it("is 0 with no recent sessions", () => {
+    expect(streakLength(new Set(), today)).toBe(0);
+    expect(streakLength(new Set(["2026-06-01"]), today)).toBe(0);
+  });
+
+  it("crosses month boundaries", () => {
+    const days = new Set(["2026-05-30", "2026-05-31", "2026-06-01"]);
+    expect(streakLength(days, new Date(2026, 5, 1))).toBe(3);
   });
 });
 

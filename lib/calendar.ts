@@ -28,6 +28,21 @@ export function addMonths(year: number, month: number, delta: number): { year: n
   return { year: Math.floor(total / 12), month: ((total % 12) + 12) % 12 };
 }
 
+/**
+ * Consecutive workout days ending today — or yesterday, so an unbroken run
+ * isn't shown as 0 before today's session happens.
+ */
+export function streakLength(markedDays: Set<string>, today: Date = new Date()): number {
+  const cursor = new Date(today);
+  if (!markedDays.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (markedDays.has(dayKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 export function monthTitle(year: number, month: number): string {
   return new Date(year, month, 1).toLocaleDateString(undefined, {
     month: "long",

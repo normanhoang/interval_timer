@@ -6,7 +6,7 @@ import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MonthCalendar } from "../../components/MonthCalendar";
 import { PressableScale } from "../../components/PressableScale";
-import { dayKey } from "../../lib/calendar";
+import { dayKey, streakLength } from "../../lib/calendar";
 import { useThemeColors } from "../../lib/theme";
 import { formatSeconds } from "../../lib/timer";
 import { Session } from "../../lib/types";
@@ -68,10 +68,22 @@ function SessionRow({ session, onDelete }: { session: Session; onDelete: () => v
   );
 }
 
-function StatPanel({ value, label }: { value: string; label: string }) {
+function StatPanel({
+  value,
+  label,
+  icon,
+}: {
+  value: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  const theme = useThemeColors();
   return (
     <View className="flex-1 rounded-3xl border border-white/60 bg-white/50 p-4 dark:border-white/10 dark:bg-white/[0.07]">
-      <Text className="text-2xl font-bold text-ink dark:text-ink-dark">{value}</Text>
+      <View className="flex-row items-start justify-between">
+        <Text className="text-2xl font-bold text-ink dark:text-ink-dark">{value}</Text>
+        <Ionicons name={icon} size={16} color={theme.inkMuted} style={{ marginTop: 4 }} />
+      </View>
       <Text className="mt-0.5 text-xs font-medium text-ink/50 dark:text-ink-dark/50">{label}</Text>
     </View>
   );
@@ -93,6 +105,7 @@ export default function HistoryScreen() {
   const totalSeconds = sessions.reduce((sum, s) => sum + s.totalSeconds, 0);
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const thisWeek = sessions.filter((s) => new Date(s.completedAt).getTime() >= weekAgo).length;
+  const streak = streakLength(markedDays);
 
   const visibleSessions = selectedDay
     ? sessions.filter((s) => dayKey(s.completedAt) === selectedDay)
@@ -129,10 +142,15 @@ export default function HistoryScreen() {
         <Text className="text-4xl font-bold text-ink dark:text-ink-dark">History</Text>
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}>
-        <View className="flex-row gap-3">
-          <StatPanel value={String(sessions.length)} label="Workouts" />
-          <StatPanel value={formatSeconds(totalSeconds)} label="Total time" />
-          <StatPanel value={String(thisWeek)} label="This week" />
+        <View className="gap-3">
+          <View className="flex-row gap-3">
+            <StatPanel value={String(streak)} label="Day streak" icon="flame-outline" />
+            <StatPanel value={String(thisWeek)} label="This week" icon="calendar-outline" />
+          </View>
+          <View className="flex-row gap-3">
+            <StatPanel value={String(sessions.length)} label="Workouts" icon="barbell-outline" />
+            <StatPanel value={formatSeconds(totalSeconds)} label="Total time" icon="time-outline" />
+          </View>
         </View>
 
         <View className="mt-4">
@@ -176,6 +194,9 @@ export default function HistoryScreen() {
 
         {sessions.length === 0 ? (
           <View className="mt-6 items-center rounded-3xl border border-white/60 bg-white/50 p-8 dark:border-white/10 dark:bg-white/[0.07]">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-white/60 dark:bg-white/[0.12]">
+              <Ionicons name="calendar-clear-outline" size={24} color={theme.inkMuted} />
+            </View>
             <Text className="text-base font-medium text-ink/60 dark:text-ink-dark/60">
               Nothing logged yet
             </Text>

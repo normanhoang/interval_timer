@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { dayKey } from "./calendar";
-import { REST_COLOR, WORK_COLOR } from "./colors";
+import { LEGACY_COLOR_MAP, REST_COLOR, WORK_COLOR } from "./colors";
 import { Session, Workout } from "./types";
 
 const WORKOUTS_KEY = "@hiit/workouts";
@@ -44,6 +44,21 @@ function seedWorkouts(): Workout[] {
       createdAt: now,
     },
   ];
+}
+
+/** Rewrites retired pastel interval colors to their bold replacements; null if untouched. */
+function migrateLegacyColors(workouts: Workout[]): Workout[] | null {
+  let changed = false;
+  const next = workouts.map((w) => ({
+    ...w,
+    intervals: w.intervals.map((i) => {
+      const mapped = LEGACY_COLOR_MAP[i.color];
+      if (!mapped) return i;
+      changed = true;
+      return { ...i, color: mapped };
+    }),
+  }));
+  return changed ? next : null;
 }
 
 interface WorkoutsValue {
@@ -80,7 +95,12 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
           setWorkouts(seeds);
           AsyncStorage.setItem(WORKOUTS_KEY, JSON.stringify(seeds)).catch(() => {});
         } else {
-          setWorkouts(JSON.parse(rawWorkouts));
+          const stored: Workout[] = JSON.parse(rawWorkouts);
+          const migrated = migrateLegacyColors(stored);
+          setWorkouts(migrated ?? stored);
+          if (migrated) {
+            AsyncStorage.setItem(WORKOUTS_KEY, JSON.stringify(migrated)).catch(() => {});
+          }
         }
         if (rawSessions != null) setSessions(JSON.parse(rawSessions));
       } catch {
