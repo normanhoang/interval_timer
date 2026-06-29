@@ -15,6 +15,7 @@ struct WorkoutEditorScreen: View {
     @State private var durationEditing: Interval.ID?
     @State private var colorEditing: Interval.ID?
     @State private var showDeleteConfirm = false
+    @State private var editMode: EditMode = .inactive
 
     private var existing: Workout? {
         if case .edit(let w) = target { return w }
@@ -46,10 +47,7 @@ struct WorkoutEditorScreen: View {
             List {
                 nameRow(theme)
                 roundsRow(theme)
-                Text("INTERVALS — DRAG ☰ TO REORDER")
-                    .font(.caption.weight(.semibold)).tracking(1.5)
-                    .foregroundStyle(theme.ink.opacity(0.4))
-                    .plainRow()
+                intervalsHeader(theme)
                 ForEach($intervals) { $interval in
                     intervalRow($interval, theme: theme)
                 }
@@ -60,9 +58,9 @@ struct WorkoutEditorScreen: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListRowHeight, 0)
+            .environment(\.editMode, $editMode)
         }
         .appBackground()
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { EditButton() } }
         .sheet(item: durationBinding) { interval in
             durationSheet(interval, theme: theme)
         }
@@ -100,6 +98,27 @@ struct WorkoutEditorScreen: View {
     }
 
     // MARK: rows
+
+    private func intervalsHeader(_ theme: ThemeColors) -> some View {
+        let editing = editMode == .active
+        return HStack {
+            Text(editing ? "DRAG ☰ TO REORDER" : "INTERVALS")
+                .font(.caption.weight(.semibold)).tracking(1.5)
+                .foregroundStyle(theme.ink.opacity(0.4))
+            Spacer()
+            if intervals.count > 1 {
+                Button {
+                    withAnimation { editMode = editing ? .inactive : .active }
+                } label: {
+                    Text(editing ? "Done" : "Reorder")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color(hex: Palette.primary))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .plainRow()
+    }
 
     private func nameRow(_ theme: ThemeColors) -> some View {
         VStack(alignment: .leading, spacing: 6) {

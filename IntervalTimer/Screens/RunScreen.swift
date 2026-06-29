@@ -44,6 +44,11 @@ struct RunScreen: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
+            if done {
+                Confetti()
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
         }
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
@@ -196,11 +201,8 @@ struct RunScreen: View {
     private func finishView(_ theme: ThemeColors) -> some View {
         VStack(spacing: 0) {
             Spacer()
-            ZStack {
-                Text("🎉").font(.system(size: 64))
-                Confetti()
-            }
-            .frame(width: 96, height: 96)
+            Text("🎉").font(.system(size: 64))
+                .frame(width: 96, height: 96)
             Text(encouragement).font(.system(size: 28, weight: .bold))
                 .foregroundStyle(theme.ink).multilineTextAlignment(.center).padding(.top, 24)
             Text("\(workout.name) · \(TimerEngineMath.formatSeconds(totalWorkout))")
