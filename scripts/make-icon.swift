@@ -28,13 +28,6 @@ ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: S), end: CGPoint(x: S, y: 0
 
 let center = CGPoint(x: S / 2, y: S / 2)
 
-// Faint elevated disc for the ring to sit on.
-ctx.setFillColor(color("#FFFFFF", 0.05))
-ctx.fillEllipse(in: CGRect(x: center.x - 430, y: center.y - 430, width: 860, height: 860))
-ctx.setStrokeColor(color("#FFFFFF", 0.08))
-ctx.setLineWidth(2)
-ctx.strokeEllipse(in: CGRect(x: center.x - 430, y: center.y - 430, width: 860, height: 860))
-
 // Six interval segments — vivid pastels pop on the dark ground.
 let segColors = ["#F38181", "#FCE38A", "#EAFFD0", "#95E1D3", "#A8D8EA", "#C9B6E4"]
 let R = 300.0, lineWidth = 76.0, sweep = 46.0

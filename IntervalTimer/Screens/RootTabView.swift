@@ -6,12 +6,16 @@ struct RootTabView: View {
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
-        TabView(selection: $selection) {
-            WorkoutsScreen().tag(0)
-            HistoryScreen().tag(1)
+        ZStack {
+            AppBackground()
+            TabView(selection: $selection) {
+                WorkoutsScreen().tag(0)
+                HistoryScreen().tag(1)
+            }
+            .background(Color.clear)
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .safeAreaInset(edge: .bottom) { bottomBar(theme) }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .safeAreaInset(edge: .bottom) { bottomBar(theme) }
     }
 
     private func bottomBar(_ theme: ThemeColors) -> some View {
