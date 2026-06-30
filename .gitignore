@@ -16,3 +16,4 @@ xcuserdata/
 *.p12
 *.key
 *.mobileprovision
+build-device/
