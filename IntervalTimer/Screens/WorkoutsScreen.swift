@@ -87,6 +87,7 @@ struct WorkoutsScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 0)
+        .contentMargins(.bottom, 72, for: .scrollContent)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { EditButton() } }
     }
 

@@ -14,7 +14,7 @@ struct RootTabView: View {
             }
             .background(Color.clear)
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .safeAreaInset(edge: .bottom) { bottomBar(theme) }
+            .overlay(alignment: .bottom) { bottomBar(theme) }
         }
     }
 

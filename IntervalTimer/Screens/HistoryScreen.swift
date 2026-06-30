@@ -43,6 +43,7 @@ struct HistoryScreen: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
                 .environment(\.defaultMinListRowHeight, 0)
+                .contentMargins(.bottom, 72, for: .scrollContent)
             }
             .appBackground()
             .toolbar(.hidden, for: .navigationBar)
