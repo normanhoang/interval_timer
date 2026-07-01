@@ -1,13 +1,13 @@
 # App Store Connect — Submission Info
 
-Everything needed to fill out the App Store Connect listing for HIIT Timer.
+Everything needed to fill out the App Store Connect listing for Interval Pulse Timer.
 
 ## App Information
 
 | Field | Value |
 |---|---|
-| App Name | HIIT Timer |
-| Subtitle | Custom interval workout timer |
+| App Name | Interval Pulse Timer |
+| Subtitle | HIIT & custom interval timer |
 | Bundle ID | `com.normanhoang.intervaltimer` |
 | SKU | `com-normanhoang-intervaltimer-20260630` (or any unique string — only used internally) |
 | Primary Category | Health & Fitness |
@@ -47,7 +47,7 @@ local SwiftData storage on-device.
 ```
 Build your own HIIT workouts and run them with a clean, focused interval timer.
 
-HIIT Timer lets you create custom sequences of named, color-coded intervals — work, rest,
+Interval Pulse Timer lets you create custom sequences of named, color-coded intervals — work, rest,
 warm-up, whatever you need — repeat them for as many rounds as you want, and run them with
 a big countdown ring, sound cues, and haptic feedback so you always know what's next
 without looking at your phone.
@@ -63,7 +63,7 @@ FEATURES
 • Light, Dark, and System appearance
 • 100% offline — no account, no ads, no tracking. All data stays on your device.
 
-Whether it's Tabata, EMOM, or your own custom split, HIIT Timer keeps the workout simple
+Whether it's Tabata, EMOM, or your own custom split, Interval Pulse Timer keeps the workout simple
 and the setup out of your way.
 ```
 
@@ -104,12 +104,12 @@ landscape isn't applicable to this app's supported orientations.
 | File | Size (px) | Satisfies App Store display size |
 |---|---|---|
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
-| `screenshots/6.7in-workouts.png` | 1284 × 2778 | 6.7" (iPhone 14 Plus class) |
+| `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 
-Both were captured from the seeded Workouts screen on Simulator. Upload the 6.7" set as
-your primary set in App Store Connect — Apple auto-scales it for smaller display sizes if
-you don't upload every size separately, but the 6.5" set is included since it was
-explicitly requested.
+Both captured on Simulator: Workouts tab (seeded workouts) and History tab. Note the
+History shot shows the empty state ("Nothing logged yet") since no session has been run
+on that simulator — complete a workout first if you want a populated history screenshot
+instead.
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
 

@@ -39,7 +39,7 @@ struct WorkoutsScreen: View {
     private func header(_ theme: ThemeColors) -> some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("HIIT TIMER")
+                Text("INTERVAL PULSE TIMER")
                     .font(.caption.weight(.semibold))
                     .tracking(2)
                     .foregroundStyle(theme.ink.opacity(0.4))

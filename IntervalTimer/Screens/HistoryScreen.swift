@@ -59,7 +59,7 @@ struct HistoryScreen: View {
 
     private func header(_ theme: ThemeColors) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("HIIT TIMER").font(.caption.weight(.semibold)).tracking(2)
+            Text("INTERVAL PULSE TIMER").font(.caption.weight(.semibold)).tracking(2)
                 .foregroundStyle(theme.ink.opacity(0.4))
             Text("History").font(.system(size: 34, weight: .bold)).foregroundStyle(theme.ink)
         }
