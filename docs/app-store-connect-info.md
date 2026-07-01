@@ -9,7 +9,7 @@ Everything needed to fill out the App Store Connect listing for HIIT Timer.
 | App Name | HIIT Timer |
 | Subtitle | Custom interval workout timer |
 | Bundle ID | `com.normanhoang.intervaltimer` |
-| SKU | `intervaltimer001` (or any unique string — only used internally) |
+| SKU | `com-normanhoang-intervaltimer-20260630` (or any unique string — only used internally) |
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
