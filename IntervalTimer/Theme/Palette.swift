@@ -14,6 +14,8 @@ enum Palette {
     static let work = "#F38181"
     static let rest = "#95E1D3"
     static let preroll = "#FCE38A"
+    static let warmup = "#FCE38A"
+    static let cooldown = "#A8D8EA"
     static let ink = "#3B3556"
     static let primary = "#A78BFA"
     static let start = "#34C759" // "Go" green — Start/play button and icon triangle

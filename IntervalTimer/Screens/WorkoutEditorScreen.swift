@@ -12,8 +12,11 @@ struct WorkoutEditorScreen: View {
     @State private var name: String
     @State private var repeats: Int
     @State private var intervals: [Interval]
+    @State private var warmupSeconds: Int
+    @State private var cooldownSeconds: Int
     @State private var durationEditing: Interval.ID?
     @State private var colorEditing: Interval.ID?
+    @State private var extraEditing: ExtraSegment?
     @State private var showDeleteConfirm = false
     @State private var editMode: EditMode = .inactive
 
@@ -30,6 +33,8 @@ struct WorkoutEditorScreen: View {
             _name = State(initialValue: w.name)
             _repeats = State(initialValue: w.repeats)
             _intervals = State(initialValue: w.intervals)
+            _warmupSeconds = State(initialValue: w.warmupSeconds)
+            _cooldownSeconds = State(initialValue: w.cooldownSeconds)
         case .new:
             _name = State(initialValue: "")
             _repeats = State(initialValue: 4)
@@ -37,6 +42,8 @@ struct WorkoutEditorScreen: View {
                 Interval(label: "Work", seconds: 30, color: Palette.work),
                 Interval(label: "Rest", seconds: 15, color: Palette.rest),
             ])
+            _warmupSeconds = State(initialValue: 0)
+            _cooldownSeconds = State(initialValue: 0)
         }
     }
 
@@ -47,12 +54,14 @@ struct WorkoutEditorScreen: View {
             List {
                 nameRow(theme)
                 roundsRow(theme)
+                extraRow(.warmup, seconds: $warmupSeconds, theme: theme)
                 intervalsHeader(theme)
                 ForEach($intervals) { $interval in
                     intervalRow($interval, theme: theme)
                 }
                 .onMove { intervals.move(fromOffsets: $0, toOffset: $1) }
                 addButton(theme)
+                extraRow(.cooldown, seconds: $cooldownSeconds, theme: theme)
                 footer(theme)
             }
             .listStyle(.plain)
@@ -66,6 +75,9 @@ struct WorkoutEditorScreen: View {
         }
         .sheet(item: colorBinding) { interval in
             colorSheet(interval, theme: theme)
+        }
+        .sheet(item: $extraEditing) { segment in
+            extraDurationSheet(segment, theme: theme)
         }
         .confirmationDialog("Delete workout?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { deleteWorkout() }
@@ -179,6 +191,40 @@ struct WorkoutEditorScreen: View {
         }
     }
 
+    private func extraRow(_ segment: ExtraSegment, seconds: Binding<Int>, theme: ThemeColors) -> some View {
+        let enabled = Binding(
+            get: { seconds.wrappedValue > 0 },
+            set: { seconds.wrappedValue = $0 ? ExtraSegment.defaultSeconds : 0 }
+        )
+        return HStack(spacing: 10) {
+            Circle().fill(Color(hex: segment.color))
+                .frame(width: 28, height: 28)
+                .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
+                .opacity(enabled.wrappedValue ? 1 : 0.35)
+            Text(segment.label)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(enabled.wrappedValue ? theme.ink : theme.ink.opacity(0.4))
+            Spacer()
+            if enabled.wrappedValue {
+                Button { extraEditing = segment } label: {
+                    Text(TimerEngineMath.formatSeconds(seconds.wrappedValue))
+                        .font(.subheadline.weight(.semibold)).monospacedDigit()
+                        .foregroundStyle(theme.ink)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Capsule().fill(theme.glassFill))
+                        .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            Toggle("", isOn: enabled)
+                .labelsHidden()
+                .tint(Color(hex: Palette.primary))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .panel(radius: 24)
+        .plainRow()
+    }
+
     private func addButton(_ theme: ThemeColors) -> some View {
         Button(action: addInterval) {
             Text("+ Add interval").font(.body.weight(.semibold))
@@ -192,7 +238,9 @@ struct WorkoutEditorScreen: View {
     }
 
     private func footer(_ theme: ThemeColors) -> some View {
-        let total = TimerEngineMath.totalDuration(intervals: intervals, repeats: repeats)
+        let total = TimerEngineMath.totalDuration(
+            intervals: intervals, repeats: repeats,
+            warmupSeconds: warmupSeconds, cooldownSeconds: cooldownSeconds)
         return VStack(spacing: 8) {
             IntervalMixBar(intervals: intervals, height: 8)
             Text("Total: \(TimerEngineMath.formatSeconds(total)) · \(repeats) \(repeats == 1 ? "round" : "rounds")")
@@ -248,6 +296,21 @@ struct WorkoutEditorScreen: View {
         }
     }
 
+    private func extraDurationSheet(_ segment: ExtraSegment, theme: ThemeColors) -> some View {
+        let seconds = segment == .warmup ? $warmupSeconds : $cooldownSeconds
+        return VStack(spacing: 8) {
+            Text(segment.label)
+                .font(.headline).foregroundStyle(theme.ink).padding(.top, 16)
+            DurationWheel(seconds: seconds)
+        }
+        .appBackground()
+        .presentationDetents([.height(280)])
+        .onDisappear {
+            // Dialing to 0 means "off" — the toggle reflects it.
+            extraEditing = nil
+        }
+    }
+
     private func colorSheet(_ interval: Interval, theme: ThemeColors) -> some View {
         let idx = intervals.firstIndex { $0.id == interval.id } ?? 0
         return VStack(spacing: 16) {
@@ -300,9 +363,13 @@ struct WorkoutEditorScreen: View {
             existing.name = finalName
             existing.intervals = intervals
             existing.repeats = repeats
+            existing.warmupSeconds = warmupSeconds
+            existing.cooldownSeconds = cooldownSeconds
         } else {
             let order = (allWorkouts.map(\.order).max() ?? -1) + 1
-            context.insert(Workout(name: finalName, intervals: intervals, repeats: repeats, order: order))
+            context.insert(Workout(name: finalName, intervals: intervals, repeats: repeats,
+                                   warmupSeconds: warmupSeconds, cooldownSeconds: cooldownSeconds,
+                                   order: order))
         }
         try? context.save()
         dismiss()
@@ -312,6 +379,17 @@ struct WorkoutEditorScreen: View {
         if let existing { context.delete(existing); try? context.save() }
         dismiss()
     }
+}
+
+/// The once-only segments editable outside the repeated interval list.
+enum ExtraSegment: String, Identifiable {
+    case warmup, cooldown
+
+    static let defaultSeconds = 60
+
+    var id: String { rawValue }
+    var label: String { self == .warmup ? "Warm up" : "Cool down" }
+    var color: String { self == .warmup ? Palette.warmup : Palette.cooldown }
 }
 
 extension View {

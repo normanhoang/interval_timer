@@ -24,9 +24,12 @@ struct RunScreen: View {
     init(workout: Workout) {
         self.workout = workout
         let segs = TimerEngineMath.flattenWorkout(
-            intervals: workout.intervals, repeats: workout.repeats, prerollSeconds: prerollSeconds)
+            intervals: workout.intervals, repeats: workout.repeats, prerollSeconds: prerollSeconds,
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
         self.segments = segs
-        self.totalWorkout = TimerEngineMath.totalDuration(intervals: workout.intervals, repeats: workout.repeats)
+        self.totalWorkout = TimerEngineMath.totalDuration(
+            intervals: workout.intervals, repeats: workout.repeats,
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
         self.totalAll = segs.isEmpty ? 0 : totalWorkout + prerollSeconds
         _engine = State(initialValue: TimerEngine(segments: segs))
     }
@@ -48,12 +51,7 @@ struct RunScreen: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             Cues.shared.initialize()
-            engine.onSegmentChange = { index, _ in if index > 0 { Cues.shared.segmentChange() } }
-            engine.onCountdownTick = { _ in Cues.shared.countdown() }
-            engine.onFinish = {
-                Cues.shared.finishCue()
-                recordSession()
-            }
+            attachEngineCallbacks()
             engine.start()
         }
         .onDisappear {
@@ -212,8 +210,36 @@ struct RunScreen: View {
                     .padding(.horizontal, 48).padding(.vertical, 18).glassChrome(radius: 32)
             }
             .buttonStyle(.pressableScale).padding(.top, 48)
+            Button(action: restart) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise").font(.system(size: 15, weight: .semibold))
+                    Text("Repeat workout").fontWeight(.semibold)
+                }
+                .foregroundStyle(theme.ink.opacity(0.7))
+                .padding(.horizontal, 24).padding(.vertical, 12).glassChrome(radius: 24)
+            }
+            .buttonStyle(.pressableScale).padding(.top, 16)
             Spacer()
         }
+    }
+
+    private func attachEngineCallbacks() {
+        engine.onSegmentChange = { index, _ in if index > 0 { Cues.shared.segmentChange() } }
+        engine.onCountdownTick = { _ in Cues.shared.countdown() }
+        engine.onFinish = {
+            Cues.shared.finishCue()
+            recordSession()
+        }
+    }
+
+    /// Run the same workout again without leaving the screen (pre-roll included).
+    private func restart() {
+        engine.stop()
+        engine = TimerEngine(segments: segments)
+        attachEngineCallbacks()
+        recorded = false
+        encouragement = Encouragements.random()
+        engine.start()
     }
 
     private func recordSession() {

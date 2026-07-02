@@ -128,7 +128,9 @@ private struct WorkoutCard: View {
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
-        let total = TimerEngineMath.totalDuration(intervals: workout.intervals, repeats: workout.repeats)
+        let total = TimerEngineMath.totalDuration(
+            intervals: workout.intervals, repeats: workout.repeats,
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -151,31 +153,47 @@ private struct WorkoutCard: View {
                 .buttonStyle(.pressableScale)
             }
             IntervalMixBar(intervals: workout.intervals)
-            FlowChips(intervals: workout.intervals, theme: theme)
+            FlowChips(intervals: workout.intervals,
+                      warmupSeconds: workout.warmupSeconds,
+                      cooldownSeconds: workout.cooldownSeconds,
+                      theme: theme)
         }
         .padding(16)
         .panel()
     }
 }
 
-/// Wrapping row of interval label chips.
+/// Wrapping row of interval label chips, with once-only warm up / cool down
+/// chips at the ends when enabled.
 private struct FlowChips: View {
     let intervals: [Interval]
+    var warmupSeconds = 0
+    var cooldownSeconds = 0
     let theme: ThemeColors
 
     var body: some View {
         FlexWrap(spacing: 6) {
+            if warmupSeconds > 0 {
+                chip("Warm up", seconds: warmupSeconds, color: Palette.warmup)
+            }
             ForEach(intervals) { interval in
-                HStack(spacing: 6) {
-                    Circle().fill(Color(hex: interval.color)).frame(width: 10, height: 10)
-                    Text("\(interval.label) \(TimerEngineMath.formatSeconds(interval.seconds))")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(theme.ink.opacity(0.7))
-                }
-                .padding(.horizontal, 10).padding(.vertical, 4)
-                .background(Capsule().fill(theme.glassFill))
-                .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
+                chip(interval.label, seconds: interval.seconds, color: interval.color)
+            }
+            if cooldownSeconds > 0 {
+                chip("Cool down", seconds: cooldownSeconds, color: Palette.cooldown)
             }
         }
+    }
+
+    private func chip(_ label: String, seconds: Int, color: String) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(Color(hex: color)).frame(width: 10, height: 10)
+            Text("\(label) \(TimerEngineMath.formatSeconds(seconds))")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(theme.ink.opacity(0.7))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 4)
+        .background(Capsule().fill(theme.glassFill))
+        .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
     }
 }

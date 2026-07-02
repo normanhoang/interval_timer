@@ -46,10 +46,46 @@ final class TimerTests: XCTestCase {
         XCTAssertEqual(segments.map(\.startsAt), [0, 30])
     }
 
+    // MARK: warm up / cool down
+
+    func testWarmupAndCooldownAppearOnceRegardlessOfRepeats() {
+        let segments = TimerEngineMath.flattenWorkout(
+            intervals: intervals, repeats: 3, warmupSeconds: 60, cooldownSeconds: 30)
+        XCTAssertEqual(segments.map(\.label),
+                       ["Warm up", "Work", "Rest", "Work", "Rest", "Work", "Rest", "Cool down"])
+        XCTAssertEqual(segments.first?.round, 0)
+        XCTAssertEqual(segments.first?.intervalIndex, -1)
+        XCTAssertEqual(segments.last?.round, 0)
+        XCTAssertEqual(segments.last?.intervalIndex, -1)
+    }
+
+    func testWarmupCooldownOrderingAndOffsetsWithPreroll() {
+        let segments = TimerEngineMath.flattenWorkout(
+            intervals: intervals, repeats: 2, prerollSeconds: 3, warmupSeconds: 60, cooldownSeconds: 30)
+        XCTAssertEqual(segments.map(\.label),
+                       ["Get ready", "Warm up", "Work", "Rest", "Work", "Rest", "Cool down"])
+        XCTAssertEqual(segments.map(\.startsAt), [0, 3, 63, 83, 93, 113, 123])
+        XCTAssertEqual(TimerEngineMath.totalOfSegments(segments), 153)
+    }
+
+    func testZeroWarmupCooldownAddNoSegments() {
+        let segments = TimerEngineMath.flattenWorkout(
+            intervals: intervals, repeats: 2, warmupSeconds: 0, cooldownSeconds: 0)
+        XCTAssertEqual(segments.count, 4)
+        XCTAssertEqual(segments.map(\.label), ["Work", "Rest", "Work", "Rest"])
+    }
+
     // MARK: totalDuration
 
     func testTotalDuration() {
         XCTAssertEqual(TimerEngineMath.totalDuration(intervals: intervals, repeats: repeats), 60)
+    }
+
+    func testTotalDurationIncludesWarmupCooldownOnce() {
+        XCTAssertEqual(
+            TimerEngineMath.totalDuration(
+                intervals: intervals, repeats: 3, warmupSeconds: 60, cooldownSeconds: 30),
+            180)
     }
 
     // MARK: segmentAt

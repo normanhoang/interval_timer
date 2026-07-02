@@ -23,26 +23,31 @@ struct SegmentPosition {
 
 enum TimerEngineMath {
     /// Expand a workout's intervals over its rounds, optionally prepending a
-    /// "Get ready" pre-roll. Intervals with seconds <= 0 are skipped.
+    /// "Get ready" pre-roll. Warm up / cool down (0 = none) run once — before
+    /// round 1 and after the last round. Intervals with seconds <= 0 are skipped.
     static func flattenWorkout(
         intervals: [Interval],
         repeats: Int,
-        prerollSeconds: Int = 0
+        prerollSeconds: Int = 0,
+        warmupSeconds: Int = 0,
+        cooldownSeconds: Int = 0
     ) -> [Segment] {
         var segments: [Segment] = []
         var t = 0
-        if prerollSeconds > 0 {
+        func appendOnce(_ label: String, _ seconds: Int, _ color: String) {
             segments.append(Segment(
-                label: "Get ready",
-                seconds: prerollSeconds,
-                color: Palette.preroll,
+                label: label,
+                seconds: seconds,
+                color: color,
                 round: 0,
                 rounds: repeats,
                 intervalIndex: -1,
-                startsAt: 0
+                startsAt: t
             ))
-            t = prerollSeconds
+            t += seconds
         }
+        if prerollSeconds > 0 { appendOnce("Get ready", prerollSeconds, Palette.preroll) }
+        if warmupSeconds > 0 { appendOnce("Warm up", warmupSeconds, Palette.warmup) }
         guard repeats >= 1 else { return segments }
         for round in 1...repeats {
             for (intervalIndex, interval) in intervals.enumerated() {
@@ -59,11 +64,18 @@ enum TimerEngineMath {
                 t += interval.seconds
             }
         }
+        if cooldownSeconds > 0 { appendOnce("Cool down", cooldownSeconds, Palette.cooldown) }
         return segments
     }
 
-    static func totalDuration(intervals: [Interval], repeats: Int) -> Int {
+    static func totalDuration(
+        intervals: [Interval],
+        repeats: Int,
+        warmupSeconds: Int = 0,
+        cooldownSeconds: Int = 0
+    ) -> Int {
         repeats * intervals.reduce(0) { $0 + max(0, $1.seconds) }
+            + max(0, warmupSeconds) + max(0, cooldownSeconds)
     }
 
     static func totalOfSegments(_ segments: [Segment]) -> Int {
