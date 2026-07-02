@@ -43,8 +43,8 @@ for i in 0..<6 {
     ctx.strokePath()
 }
 
-// Center play triangle (accent purple), rounded corners via round-join stroke + fill.
-let purple = color("#A78BFA")
+// Center play triangle ("Go" green), rounded corners via round-join stroke + fill.
+let purple = color("#34C759")
 let p1 = CGPoint(x: center.x - 84, y: center.y + 112)
 let p2 = CGPoint(x: center.x - 84, y: center.y - 112)
 let p3 = CGPoint(x: center.x + 138, y: center.y)

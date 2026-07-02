@@ -16,6 +16,7 @@ enum Palette {
     static let preroll = "#FCE38A"
     static let ink = "#3B3556"
     static let primary = "#A78BFA"
+    static let start = "#34C759" // "Go" green — Start/play button and icon triangle
 
     /// Perceived-luminance check for picking a readable foreground on a swatch.
     static func isLight(_ hex: String) -> Bool {

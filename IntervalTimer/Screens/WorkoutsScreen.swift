@@ -146,7 +146,7 @@ private struct WorkoutCard: View {
                         .foregroundStyle(.white)
                         .offset(x: 1)
                         .frame(width: 56, height: 56)
-                        .background(Circle().fill(Color(hex: Palette.primary)))
+                        .background(Circle().fill(Color(hex: Palette.start)))
                 }
                 .buttonStyle(.pressableScale)
             }
