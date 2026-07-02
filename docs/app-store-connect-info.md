@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.0 |
-| Build number | 1 |
+| Version (Marketing) | 1.1 |
+| Build number | 2 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -54,7 +54,8 @@ without looking at your phone.
 
 FEATURES
 • Build unlimited custom workouts with named, colored, timed intervals
-• Repeat any workout for 1–99 rounds
+• Optional warm-up and cool-down segments that run once, not per round
+• Repeat any workout for 1–99 rounds, or instantly re-run it from the finish screen
 • Drag to reorder workouts and intervals
 • Big countdown ring with round progress and "next up" preview
 • Audio + haptic cues for interval changes and the final countdown
@@ -78,6 +79,15 @@ hiit,interval timer,tabata,workout timer,fitness timer,circuit training,gym time
 ```
 Build any interval workout you can imagine — run it with a big countdown ring and haptic
 cues. 100% offline, no account needed.
+```
+
+## What's New (Version 1.1)
+
+```
+- Add optional warm-up and cool-down segments to any workout — they run once,
+  before round 1 and after your last round, and don't count toward your rounds.
+- Repeat a workout right from the finish screen without leaving the timer.
+- Performance and battery improvements throughout.
 ```
 
 ## What's New (Version 1.0)
@@ -106,10 +116,8 @@ landscape isn't applicable to this app's supported orientations.
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 
-Both captured on Simulator: Workouts tab (seeded workouts) and History tab. Note the
-History shot shows the empty state ("Nothing logged yet") since no session has been run
-on that simulator — complete a workout first if you want a populated history screenshot
-instead.
+Both captured on Simulator: Workouts tab (seeded workouts) and History tab with one
+completed session, showing streak/stats and the habit-tracking calendar.
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
 
