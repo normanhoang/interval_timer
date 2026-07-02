@@ -15,6 +15,11 @@ struct Confetti: View {
     private let sparks: [Spark]
     private let start = Date()
     private let duration = 1.8
+    /// Last spark's fade-out end — pause the timeline after this so the Canvas
+    /// stops redrawing every frame once the burst is over.
+    private let maxWave = 2 * 0.12
+
+    @State private var finished = false
 
     init(count: Int = 90) {
         let colors = Palette.intervalColors.map { Color(hex: $0) }
@@ -30,7 +35,7 @@ struct Confetti: View {
     }
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(minimumInterval: nil, paused: finished)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(start)
             Canvas { ctx, size in
                 let cx = size.width / 2
@@ -53,5 +58,9 @@ struct Confetti: View {
             }
         }
         .allowsHitTesting(false)
+        .task {
+            try? await Task.sleep(for: .seconds(duration + maxWave + 0.1))
+            finished = true
+        }
     }
 }

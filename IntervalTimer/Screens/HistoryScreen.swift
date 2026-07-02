@@ -173,19 +173,27 @@ struct HistoryScreen: View {
         return "today"
     }
 
+    // DateFormatter creation is expensive — build once and reuse (main-thread only).
+    private static let dayKeyFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"; return fmt
+    }()
+    private static let monthDayFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "MMMM d"; return fmt
+    }()
+    private static let weekdayFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "EEEE, MMMM d"; return fmt
+    }()
+
     private func prettyDay(_ key: String) -> String {
-        let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"
-        guard let date = fmt.date(from: key) else { return key }
-        let out = DateFormatter(); out.dateFormat = "MMMM d"
-        return out.string(from: date)
+        guard let date = Self.dayKeyFormatter.date(from: key) else { return key }
+        return Self.monthDayFormatter.string(from: date)
     }
 
     private func dayLabel(_ date: Date) -> String {
         let cal = Calendar.current
         if cal.isDateInToday(date) { return "Today" }
         if cal.isDateInYesterday(date) { return "Yesterday" }
-        let fmt = DateFormatter(); fmt.dateFormat = "EEEE, MMMM d"
-        return fmt.string(from: date)
+        return Self.weekdayFormatter.string(from: date)
     }
 
     private func groupByDay(_ items: [Session]) -> [(label: String, items: [Session])] {

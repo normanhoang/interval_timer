@@ -8,6 +8,9 @@ struct MonthCalendar: View {
 
     @Environment(\.colorScheme) private var scheme
     @State private var visible: (year: Int, month: Int)
+    /// Cached grid for the visible month — rebuilding it every body evaluation
+    /// creates ~35 Dates via Calendar for no reason.
+    @State private var weeks: [[Date?]]
 
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     private let primary = Color(hex: Palette.primary)
@@ -16,7 +19,9 @@ struct MonthCalendar: View {
         self.markedDays = markedDays
         self._selectedDay = selectedDay
         let c = Calendar.current.dateComponents([.year, .month], from: .now)
-        _visible = State(initialValue: (c.year ?? 2026, c.month ?? 1))
+        let initial = (year: c.year ?? 2026, month: c.month ?? 1)
+        _visible = State(initialValue: initial)
+        _weeks = State(initialValue: CalendarMath.monthMatrix(year: initial.year, month: initial.month))
     }
 
     var body: some View {
@@ -24,7 +29,6 @@ struct MonthCalendar: View {
         let today = Date.now
         let nowComps = Calendar.current.dateComponents([.year, .month], from: today)
         let atCurrentMonth = visible.year == nowComps.year && visible.month == nowComps.month
-        let weeks = CalendarMath.monthMatrix(year: visible.year, month: visible.month)
 
         VStack(spacing: 0) {
             HStack {
@@ -113,5 +117,6 @@ struct MonthCalendar: View {
 
     private func page(_ delta: Int) {
         visible = CalendarMath.addMonths(year: visible.year, month: visible.month, delta: delta)
+        weeks = CalendarMath.monthMatrix(year: visible.year, month: visible.month)
     }
 }

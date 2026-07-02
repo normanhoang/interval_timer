@@ -59,6 +59,7 @@ final class TimerEngine {
         ticker = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.sync()
         }
+        ticker?.tolerance = 0.02
     }
 
     private func elapsedNow() -> Double {
@@ -92,8 +93,9 @@ final class TimerEngine {
             lastWhole = whole
             if whole >= 1 && whole <= 3 { onCountdownTick?(whole) }
         }
-        index = pos.index
-        remaining = whole
+        // @Observable fires on every set regardless of equality — skip no-op writes.
+        if index != pos.index { index = pos.index }
+        if remaining != whole { remaining = whole }
         fraction = pos.remaining / Double(seg.seconds)
         totalRemaining = max(0, Double(total) - elapsed)
     }
@@ -108,6 +110,9 @@ final class TimerEngine {
         guard phase == .running else { return }
         pausedAt = Date()
         phase = .paused
+        // Elapsed is wall-clock based, so the ticker can stop while paused
+        // (nothing changes) and restart on resume with zero drift.
+        stop()
     }
 
     func resume() {
@@ -117,6 +122,8 @@ final class TimerEngine {
             self.pausedAt = nil
         }
         phase = .running
+        startTicker()
+        sync()
     }
 
     func skipNext() {

@@ -1,7 +1,13 @@
 import Foundation
 
 enum CalendarMath {
-    private static var calendar: Calendar { Calendar.current }
+    private static let calendar = Calendar.current
+
+    private static let monthTitleFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "LLLL yyyy"
+        return fmt
+    }()
 
     /// Local calendar-day key, e.g. "2026-06-12".
     static func dayKey(_ date: Date) -> String {
@@ -66,8 +72,6 @@ enum CalendarMath {
         comps.month = month
         comps.day = 1
         guard let date = calendar.date(from: comps) else { return "" }
-        let fmt = DateFormatter()
-        fmt.dateFormat = "LLLL yyyy"
-        return fmt.string(from: date)
+        return monthTitleFormatter.string(from: date)
     }
 }

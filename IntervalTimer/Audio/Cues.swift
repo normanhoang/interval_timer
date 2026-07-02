@@ -6,11 +6,15 @@ import UIKit
 final class Cues {
     static let shared = Cues()
 
+    // Audio session + players live on `queue` so activation/loading (tens of
+    // ms) never blocks the main thread while the run screen animates in.
+    private let queue = DispatchQueue(label: "com.normanhoang.intervaltimer.cues", qos: .userInitiated)
     private var tick: AVAudioPlayer?
     private var finish: AVAudioPlayer?
     private var alerts: [String: AVAudioPlayer] = [:]
     private var ready = false
 
+    // Main-thread only (written by Settings, read before hopping to `queue`).
     private var soundOn = true
     private var hapticsOn = true
     private var alertId = AlertSounds.defaultId
@@ -29,6 +33,14 @@ final class Cues {
     }
 
     func initialize() {
+        lightImpact.prepare()
+        mediumImpact.prepare()
+        notify.prepare()
+        queue.async { self.load() }
+    }
+
+    /// On `queue`.
+    private func load() {
         guard !ready else { return }
         try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
@@ -37,20 +49,20 @@ final class Cues {
         for sound in AlertSounds.all {
             alerts[sound.id] = player(named: sound.file)
         }
-        lightImpact.prepare()
-        mediumImpact.prepare()
-        notify.prepare()
         ready = true
     }
 
     func release() {
-        tick = nil
-        finish = nil
-        alerts.removeAll()
-        ready = false
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        queue.async {
+            self.tick = nil
+            self.finish = nil
+            self.alerts.removeAll()
+            self.ready = false
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
+    /// On `queue`.
     private func player(named name: String) -> AVAudioPlayer? {
         guard let url = Bundle.main.url(forResource: name, withExtension: "wav") else { return nil }
         let p = try? AVAudioPlayer(contentsOf: url)
@@ -58,30 +70,36 @@ final class Cues {
         return p
     }
 
-    private func replay(_ p: AVAudioPlayer?, force: Bool = false) {
-        guard let p, soundOn || force else { return }
+    /// On `queue`.
+    private func replay(_ p: AVAudioPlayer?) {
+        guard let p else { return }
         p.currentTime = 0
         p.play()
     }
 
     /// Settings picker preview — plays regardless of the sound toggle.
     func previewAlert(_ id: String) {
-        initialize()
-        replay(alerts[id], force: true)
+        queue.async {
+            self.load()
+            self.replay(self.alerts[id])
+        }
     }
 
     func countdown() {
-        replay(tick)
+        if soundOn { queue.async { self.replay(self.tick) } }
         if hapticsOn { lightImpact.impactOccurred() }
     }
 
     func segmentChange() {
-        replay(alerts[alertId] ?? alerts[AlertSounds.defaultId])
+        if soundOn {
+            let id = alertId
+            queue.async { self.replay(self.alerts[id] ?? self.alerts[AlertSounds.defaultId]) }
+        }
         if hapticsOn { mediumImpact.impactOccurred() }
     }
 
     func finishCue() {
-        replay(finish)
+        if soundOn { queue.async { self.replay(self.finish) } }
         if hapticsOn { notify.notificationOccurred(.success) }
     }
 }
