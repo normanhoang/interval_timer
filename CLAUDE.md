@@ -42,6 +42,44 @@ xcrun simctl io booted screenshot shot.png
 **Important:** after adding, removing, or renaming source files you must re-run
 `xcodegen generate` before building, or the new files won't be in the project.
 
+Device & release:
+
+```bash
+xcrun devicectl list devices                                                         # paired iPhones
+xcodebuild -project IntervalTimer.xcodeproj -scheme IntervalTimer \
+  -destination 'platform=iOS,id=<UDID>' -allowProvisioningUpdates build              # build for phone
+xcrun devicectl device install app --device <UDID> <BUILT_PRODUCTS_DIR>/IntervalTimer.app
+xcodebuild -project IntervalTimer.xcodeproj -scheme IntervalTimer -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath build/IntervalTimer.xcarchive \
+  -allowProvisioningUpdates archive                                                  # Release archive
+xcodebuild -exportArchive -archivePath build/IntervalTimer.xcarchive \
+  -exportPath build/export -exportOptionsPlist build/exportOptions.plist             # IPA
+```
+
+Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml` (then
+`xcodegen generate`), and update the version table + "What's New" in
+`docs/app-store-connect-info.md`.
+
+## Simulators & UI verification
+
+- The long-booted "iPhone 17" simulator is **shared with other automation** (other
+  projects' UI tests launch their apps over yours mid-run). Boot a dedicated device
+  (e.g. iPhone 17 Pro) for anything interactive, and shut it down after.
+- "AppStore-6.5" sim (iPhone 11 Pro Max) exists for App Store screenshots (1242×2688,
+  portrait) → saved in `docs/screenshots/`.
+- Clicking the Simulator window with cliclick/AppleScript is unreliable. To drive the UI,
+  add a **temporary XCUITest target** (`bundle.ui-testing` in `project.yml` + `xcodegen`),
+  run it with `-only-testing:`, capture `xcrun simctl io <UDID> screenshot` from the shell
+  while the test dwells, then delete the target and regenerate.
+- XCUITest + SwiftUI quirks: buttons often report `isHittable == false` — tap
+  `element.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5))` instead; a `Toggle`
+  shows up as duplicate nested switch elements (pick one per row by frame position).
+
+## Gotchas
+
+- IDE/SourceKit diagnostics show false "Cannot find X in scope" errors across this
+  xcodegen project — trust `xcodebuild` output instead.
+
 ## Architecture (`IntervalTimer/`)
 
 - `IntervalTimerApp.swift` — `@main`, builds the SwiftData `ModelContainer` (wipes &
@@ -50,15 +88,18 @@ xcrun simctl io booted screenshot shot.png
 
 ### Models (`Models/`)
 - `Workout.swift` — `@Model Workout` (has `uuid`, `name`, `intervals: [Interval]`,
-  `repeats`, `createdAt`, `order`) and `@Model Session`. `Interval` is a `Codable` struct
+  `repeats`, `warmupSeconds`/`cooldownSeconds` (once-only segments, 0 = off),
+  `createdAt`, `order`) and `@Model Session`. `Interval` is a `Codable` struct
   stored inline on the workout. **Note:** the domain id field is named `uuid`, not `id`,
   to avoid clashing with SwiftData/`Identifiable`. `order` gives the Workouts list a manual
   sort (SwiftData has no inherent order); reordering rewrites it.
 
 ### Engine (`Engine/`) — pure, unit-tested
-- `Segment.swift` — `TimerEngineMath` namespace: `flattenWorkout(intervals:repeats:prerollSeconds:)`
-  expands rounds (+ optional "Get ready" pre-roll) into `Segment`s with cumulative
-  `startsAt`; `segmentAt(_:elapsed:)` (an elapsed exactly on a segment edge belongs to the
+- `Segment.swift` — `TimerEngineMath` namespace:
+  `flattenWorkout(intervals:repeats:prerollSeconds:warmupSeconds:cooldownSeconds:)`
+  expands rounds (+ optional "Get ready" pre-roll and once-only warm up / cool down —
+  all `round: 0`, `intervalIndex: -1`, so the ring hides the round counter for them)
+  into `Segment`s with cumulative `startsAt`; `segmentAt(_:elapsed:)` (an elapsed exactly on a segment edge belongs to the
   **next** segment); `totalDuration`; `formatSeconds`.
 - `TimerEngine.swift` — `@Observable`, **timestamp-based**: elapsed is always recomputed
   from `Date()` minus accumulated pause time, so pauses/stalls never drift. A 100ms `Timer`
@@ -102,13 +143,15 @@ xcrun simctl io booted screenshot shot.png
 - `WorkoutsScreen` — header (Settings gear, New), reorderable `List` of workout cards (play
   button → `RunScreen` fullScreenCover; card tap → editor sheet; `EditButton` toggles
   drag-reorder).
-- `WorkoutEditorScreen` — sheet; name, rounds stepper (1–99), interval `List` (`.onMove`
-  reorder + `.swipeActions` delete), per-row color/duration sheets (`.presentationDetents`;
-  closing a 0s duration clamps to 1s), total footer, save/delete.
+- `WorkoutEditorScreen` — sheet; name, rounds stepper (1–99), independent warm-up /
+  cool-down toggle rows (fixed label+color, duration wheel, 60s default on enable),
+  interval `List` (`.onMove` reorder + `.swipeActions` delete), per-row color/duration
+  sheets (`.presentationDetents`; closing a 0s duration clamps to 1s), total footer,
+  save/delete.
 - `RunScreen` — fullScreenCover, keep-awake (`isIdleTimerDisabled`), 3s pre-roll, ring +
   round/next-up + total-progress bar + controls + header mute. On finish: confetti +
-  random encouragement + Done, fires finish cue and inserts a `Session`. Ending early
-  records nothing.
+  random encouragement + Done + "Repeat workout" (rebuilds the engine and re-runs from
+  the pre-roll; each completion inserts its own `Session`). Ending early records nothing.
 - `HistoryScreen` — stat panels (streak / this-week / total workouts / total time),
   `MonthCalendar` (tap a marked day to filter, "Show all" clears), sessions grouped
   Today/Yesterday/weekday with swipe-to-delete, Clear history (clear day or all).
