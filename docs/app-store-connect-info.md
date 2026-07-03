@@ -14,7 +14,7 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
 | Version (Marketing) | 1.2 |
-| Build number | 3 |
+| Build number | 4 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -84,7 +84,8 @@ cues. 100% offline, no account needed.
 ## What's New (Version 1.2)
 
 ```
-- Twice the color choices: the interval color picker now offers 12 colors.
+- A redesigned 12-color interval picker: clearer, more distinct colors laid out
+  in rainbow order so each one is easy to tell apart.
 ```
 
 ## What's New (Version 1.1)

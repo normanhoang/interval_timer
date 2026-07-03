@@ -3,25 +3,25 @@ import SwiftUI
 /// Soft interval palette — mirrors the RN lib/colors.ts hexes.
 enum Palette {
     static let intervalColors: [String] = [
-        "#F38181", // coral
-        "#FCE38A", // yellow
-        "#EAFFD0", // pale green
-        "#95E1D3", // aqua
-        "#A8D8EA", // sky
-        "#C9B6E4", // lavender
-        "#FFC8A2", // peach
-        "#F8A5C2", // rose
-        "#B5EAD7", // mint
-        "#A6B1E1", // periwinkle
-        "#D8A7CA", // mauve
-        "#E8D5B7", // sand
+        "#F38181", // coral red
+        "#FFB27A", // orange
+        "#FCD34D", // amber
+        "#B4E062", // lime
+        "#5FC98A", // green
+        "#3FC7B7", // teal
+        "#5FB8E0", // sky
+        "#6B8FE0", // blue
+        "#9B8CEC", // indigo
+        "#B87BDC", // purple
+        "#DB86C9", // orchid
+        "#F191B4", // pink
     ]
 
     static let work = "#F38181"
-    static let rest = "#95E1D3"
-    static let preroll = "#FCE38A"
-    static let warmup = "#FCE38A"
-    static let cooldown = "#A8D8EA"
+    static let rest = "#5FC98A"
+    static let preroll = "#FCD34D"
+    static let warmup = "#FCD34D"
+    static let cooldown = "#5FB8E0"
     static let ink = "#3B3556"
     static let primary = "#A78BFA"
     static let start = "#34C759" // "Go" green — Start/play button and icon triangle
