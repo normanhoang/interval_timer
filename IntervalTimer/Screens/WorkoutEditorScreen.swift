@@ -316,7 +316,7 @@ struct WorkoutEditorScreen: View {
         return VStack(spacing: 16) {
             Text("\(intervals[idx].label.isEmpty ? "Interval" : intervals[idx].label) color")
                 .font(.headline).foregroundStyle(theme.ink).padding(.top, 16)
-            HStack(spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(48), spacing: 10), count: 6), spacing: 10) {
                 ForEach(Palette.intervalColors, id: \.self) { color in
                     let active = intervals[idx].color == color
                     Button {
@@ -339,7 +339,7 @@ struct WorkoutEditorScreen: View {
             .padding(.bottom, 24)
         }
         .appBackground()
-        .presentationDetents([.height(180)])
+        .presentationDetents([.height(240)])
         .onDisappear { colorEditing = nil }
     }
 

@@ -9,6 +9,12 @@ enum Palette {
         "#95E1D3", // aqua
         "#A8D8EA", // sky
         "#C9B6E4", // lavender
+        "#FFC8A2", // peach
+        "#F8A5C2", // rose
+        "#B5EAD7", // mint
+        "#A6B1E1", // periwinkle
+        "#D8A7CA", // mauve
+        "#E8D5B7", // sand
     ]
 
     static let work = "#F38181"
