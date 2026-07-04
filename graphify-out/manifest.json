@@ -1,0 +1,252 @@
+{
+  ".vscode/extensions.json": {
+    "mtime": 1781236298.097979,
+    "ast_hash": "b2354ba0225f5689d13651ec0fac0de0",
+    "semantic_hash": "b2354ba0225f5689d13651ec0fac0de0"
+  },
+  ".vscode/settings.json": {
+    "mtime": 1781236298.0977929,
+    "ast_hash": "6b9302c1f72c315e90233c7539c48c9f",
+    "semantic_hash": "6b9302c1f72c315e90233c7539c48c9f"
+  },
+  "IntervalTimer/Audio/AlertSounds.swift": {
+    "mtime": 1782773703.51674,
+    "ast_hash": "93c0ca47a3a4ce906492f36ddf3ced83",
+    "semantic_hash": "93c0ca47a3a4ce906492f36ddf3ced83"
+  },
+  "IntervalTimer/Audio/Cues.swift": {
+    "mtime": 1782998535.0202973,
+    "ast_hash": "8a9c6bb5548bdf7f286865b7b896ae52",
+    "semantic_hash": "8a9c6bb5548bdf7f286865b7b896ae52"
+  },
+  "IntervalTimer/Components/AppBackground.swift": {
+    "mtime": 1782773840.349439,
+    "ast_hash": "acdf7ac1005dbc2c21d09ce412f8d1cd",
+    "semantic_hash": "acdf7ac1005dbc2c21d09ce412f8d1cd"
+  },
+  "IntervalTimer/Components/Confetti.swift": {
+    "mtime": 1782998437.5784934,
+    "ast_hash": "c8fd8fce86a0c67cebbd742324b9a2ab",
+    "semantic_hash": "c8fd8fce86a0c67cebbd742324b9a2ab"
+  },
+  "IntervalTimer/Components/DurationWheel.swift": {
+    "mtime": 1782773923.1550617,
+    "ast_hash": "3e51f435607ff778a2b7925f542c099b",
+    "semantic_hash": "3e51f435607ff778a2b7925f542c099b"
+  },
+  "IntervalTimer/Components/FlexWrap.swift": {
+    "mtime": 1782774084.5279508,
+    "ast_hash": "cd420ae4fccaa294d3a6aa7ad4faa91b",
+    "semantic_hash": "cd420ae4fccaa294d3a6aa7ad4faa91b"
+  },
+  "IntervalTimer/Components/GlassSurface.swift": {
+    "mtime": 1782773853.9262722,
+    "ast_hash": "7eaff5a4bf955926a00b5401b74d5950",
+    "semantic_hash": "7eaff5a4bf955926a00b5401b74d5950"
+  },
+  "IntervalTimer/Components/IntervalMixBar.swift": {
+    "mtime": 1782773888.7939467,
+    "ast_hash": "00f29631cd3ae95df38a9dcf80744438",
+    "semantic_hash": "00f29631cd3ae95df38a9dcf80744438"
+  },
+  "IntervalTimer/Components/MonthCalendar.swift": {
+    "mtime": 1782998488.3583624,
+    "ast_hash": "cb67b1e355dfcb8f4227dc913ec2a525",
+    "semantic_hash": "cb67b1e355dfcb8f4227dc913ec2a525"
+  },
+  "IntervalTimer/Components/PressableScaleStyle.swift": {
+    "mtime": 1782773859.6853833,
+    "ast_hash": "17ee6dab803a614d2b7f0ece15f6c717",
+    "semantic_hash": "17ee6dab803a614d2b7f0ece15f6c717"
+  },
+  "IntervalTimer/Components/ProgressRing.swift": {
+    "mtime": 1782773868.0540645,
+    "ast_hash": "bbbe1ae2d766ee13a15feaed0e7c3531",
+    "semantic_hash": "bbbe1ae2d766ee13a15feaed0e7c3531"
+  },
+  "IntervalTimer/Engine/Segment.swift": {
+    "mtime": 1783016896.3638513,
+    "ast_hash": "4b6ca4fe7fc835775608b09d9abf472a",
+    "semantic_hash": "4b6ca4fe7fc835775608b09d9abf472a"
+  },
+  "IntervalTimer/Engine/TimerEngine.swift": {
+    "mtime": 1782998457.7199047,
+    "ast_hash": "5b5550b164b56b91e1c823ec96490ff0",
+    "semantic_hash": "5b5550b164b56b91e1c823ec96490ff0"
+  },
+  "IntervalTimer/IntervalTimerApp.swift": {
+    "mtime": 1782774665.9799528,
+    "ast_hash": "e83371c1c2682a4fa04acd8b4061807d",
+    "semantic_hash": "e83371c1c2682a4fa04acd8b4061807d"
+  },
+  "IntervalTimer/Models/Workout.swift": {
+    "mtime": 1783016903.4013112,
+    "ast_hash": "1899688019568bbd539beb2be7179e33",
+    "semantic_hash": "1899688019568bbd539beb2be7179e33"
+  },
+  "IntervalTimer/Resources/Assets.xcassets/AccentColor.colorset/Contents.json": {
+    "mtime": 1782774919.0366242,
+    "ast_hash": "c36c5b49bca8c8848470e67a9ad1b47a",
+    "semantic_hash": "c36c5b49bca8c8848470e67a9ad1b47a"
+  },
+  "IntervalTimer/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json": {
+    "mtime": 1782774907.6823342,
+    "ast_hash": "cc0fa974a2eb9d06669de8f7d07455fc",
+    "semantic_hash": "cc0fa974a2eb9d06669de8f7d07455fc"
+  },
+  "IntervalTimer/Resources/Assets.xcassets/Contents.json": {
+    "mtime": 1782774931.753264,
+    "ast_hash": "9deb2ada1cc834bbebf8bbad9c8978a1",
+    "semantic_hash": "9deb2ada1cc834bbebf8bbad9c8978a1"
+  },
+  "IntervalTimer/Screens/HistoryScreen.swift": {
+    "mtime": 1782998417.5675244,
+    "ast_hash": "6c152ba3f698e11e59616b7dd825a0d4",
+    "semantic_hash": "6c152ba3f698e11e59616b7dd825a0d4"
+  },
+  "IntervalTimer/Screens/RootTabView.swift": {
+    "mtime": 1782956888.112782,
+    "ast_hash": "f241fafeac4047221016cf961883cf24",
+    "semantic_hash": "f241fafeac4047221016cf961883cf24"
+  },
+  "IntervalTimer/Screens/RunScreen.swift": {
+    "mtime": 1783017028.9156344,
+    "ast_hash": "5d9e13ef3f4614f7bf91e55503d20d28",
+    "semantic_hash": "5d9e13ef3f4614f7bf91e55503d20d28"
+  },
+  "IntervalTimer/Screens/SettingsScreen.swift": {
+    "mtime": 1782774192.616956,
+    "ast_hash": "4607b66263ba9caf64335892aed002d5",
+    "semantic_hash": "4607b66263ba9caf64335892aed002d5"
+  },
+  "IntervalTimer/Screens/WorkoutEditorScreen.swift": {
+    "mtime": 1783052975.60774,
+    "ast_hash": "a0f4a66e7b72fd786f58310e3abc31c8",
+    "semantic_hash": "a0f4a66e7b72fd786f58310e3abc31c8"
+  },
+  "IntervalTimer/Screens/WorkoutsScreen.swift": {
+    "mtime": 1783017049.5873551,
+    "ast_hash": "59656e25883c73607e41aa55f7903bc1",
+    "semantic_hash": "59656e25883c73607e41aa55f7903bc1"
+  },
+  "IntervalTimer/Stores/Seed.swift": {
+    "mtime": 1782773723.2120163,
+    "ast_hash": "b2b7fa787c7fce29c4af6b7a21f1785a",
+    "semantic_hash": "b2b7fa787c7fce29c4af6b7a21f1785a"
+  },
+  "IntervalTimer/Stores/Settings.swift": {
+    "mtime": 1782774164.4546835,
+    "ast_hash": "3ab773456eee6961e48a290e149c8c36",
+    "semantic_hash": "3ab773456eee6961e48a290e149c8c36"
+  },
+  "IntervalTimer/Theme/Palette.swift": {
+    "mtime": 1783054078.9195178,
+    "ast_hash": "868441bc2ff6d7389f8ef49bc43f16a4",
+    "semantic_hash": "868441bc2ff6d7389f8ef49bc43f16a4"
+  },
+  "IntervalTimer/Theme/Theme.swift": {
+    "mtime": 1782773630.0955029,
+    "ast_hash": "356935860ae09e1ea964e8159cee80a8",
+    "semantic_hash": "356935860ae09e1ea964e8159cee80a8"
+  },
+  "IntervalTimer/Util/CalendarMath.swift": {
+    "mtime": 1782998421.697352,
+    "ast_hash": "c4d55d62854ab45538bef081146be42f",
+    "semantic_hash": "c4d55d62854ab45538bef081146be42f"
+  },
+  "IntervalTimer/Util/Encouragements.swift": {
+    "mtime": 1782773686.5029685,
+    "ast_hash": "3e51c0629a2bf2a1f3a7963000a4bca8",
+    "semantic_hash": "3e51c0629a2bf2a1f3a7963000a4bca8"
+  },
+  "IntervalTimerTests/CalendarTests.swift": {
+    "mtime": 1782773786.2847023,
+    "ast_hash": "ae0679c44232612f44b84e63b8790c07",
+    "semantic_hash": "ae0679c44232612f44b84e63b8790c07"
+  },
+  "IntervalTimerTests/TimerTests.swift": {
+    "mtime": 1783016874.8582366,
+    "ast_hash": "bcd487d45c28de8ead953bf5f1b1e0b4",
+    "semantic_hash": "bcd487d45c28de8ead953bf5f1b1e0b4"
+  },
+  "scripts/make-icon.swift": {
+    "mtime": 1782956496.8717597,
+    "ast_hash": "387df7f235612ba91e8623525bf7b933",
+    "semantic_hash": "387df7f235612ba91e8623525bf7b933"
+  },
+  "CLAUDE.md": {
+    "mtime": 1783050577.2770274,
+    "ast_hash": "9587569934a5b607e0f5aeecfb8e0d5b",
+    "semantic_hash": "9587569934a5b607e0f5aeecfb8e0d5b"
+  },
+  "docs/app-store-connect-info.md": {
+    "mtime": 1783054154.2202778,
+    "ast_hash": "686160774e44c17ccdd8cba3d702a32c",
+    "semantic_hash": "686160774e44c17ccdd8cba3d702a32c"
+  },
+  "docs/privacy.html": {
+    "mtime": 1782874381.8855233,
+    "ast_hash": "46df234570fe6aaf531e192e810ab28b",
+    "semantic_hash": "46df234570fe6aaf531e192e810ab28b"
+  },
+  "docs/support.html": {
+    "mtime": 1782874381.8862407,
+    "ast_hash": "c19bd4cbbdc39bee6f0aeeb26a413dd3",
+    "semantic_hash": "c19bd4cbbdc39bee6f0aeeb26a413dd3"
+  },
+  "project.yml": {
+    "mtime": 1783054257.7057385,
+    "ast_hash": "45b3d25df91a46c3b3510c71b6e87779",
+    "semantic_hash": "45b3d25df91a46c3b3510c71b6e87779"
+  },
+  "IntervalTimer/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png": {
+    "mtime": 1783188161.7002017,
+    "ast_hash": "66be51a38abf8792fcb123320ba7551c",
+    "semantic_hash": "66be51a38abf8792fcb123320ba7551c"
+  },
+  "docs/screenshots/6.5in-history.png": {
+    "mtime": 1783020137.6946595,
+    "ast_hash": "792944ba97d54423257d51d554cba941",
+    "semantic_hash": "792944ba97d54423257d51d554cba941"
+  },
+  "docs/screenshots/6.5in-workouts.png": {
+    "mtime": 1783020137.6890223,
+    "ast_hash": "e906b643b1292ef01e3d7f0566e894d7",
+    "semantic_hash": "e906b643b1292ef01e3d7f0566e894d7"
+  },
+  "IntervalTimer/Resources/Sounds/alert-beep.wav": {
+    "mtime": 1782773735.5507839,
+    "ast_hash": "b4ca2d31b73fbf8032f6df9eef0f1204",
+    "semantic_hash": "b4ca2d31b73fbf8032f6df9eef0f1204"
+  },
+  "IntervalTimer/Resources/Sounds/alert-bell.wav": {
+    "mtime": 1782773735.5513446,
+    "ast_hash": "4a2a35b312a7e177e37e30bf2ba8959e",
+    "semantic_hash": "4a2a35b312a7e177e37e30bf2ba8959e"
+  },
+  "IntervalTimer/Resources/Sounds/alert-chime.wav": {
+    "mtime": 1782773735.551771,
+    "ast_hash": "273a5ea8ff7622d03ad7b01a9bedb77b",
+    "semantic_hash": "273a5ea8ff7622d03ad7b01a9bedb77b"
+  },
+  "IntervalTimer/Resources/Sounds/alert-ding.wav": {
+    "mtime": 1782773735.5521464,
+    "ast_hash": "4f4bdbf100a72c55a56286ea40525531",
+    "semantic_hash": "4f4bdbf100a72c55a56286ea40525531"
+  },
+  "IntervalTimer/Resources/Sounds/alert-pulse.wav": {
+    "mtime": 1782773735.5525875,
+    "ast_hash": "84604ed48bc462e68944be4ed66740c7",
+    "semantic_hash": "84604ed48bc462e68944be4ed66740c7"
+  },
+  "IntervalTimer/Resources/Sounds/finish.wav": {
+    "mtime": 1782773735.5529869,
+    "ast_hash": "ab779bc2e5f849924c36c3841bd0f212",
+    "semantic_hash": "ab779bc2e5f849924c36c3841bd0f212"
+  },
+  "IntervalTimer/Resources/Sounds/tick.wav": {
+    "mtime": 1782773735.553259,
+    "ast_hash": "d495331841a32d2119168771e5e56ee5",
+    "semantic_hash": "d495331841a32d2119168771e5e56ee5"
+  }
+}

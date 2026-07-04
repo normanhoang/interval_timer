@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.2 |
-| Build number | 4 |
+| Version (Marketing) | 1.3 |
+| Build number | 5 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -79,6 +79,13 @@ hiit,interval timer,tabata,workout timer,fitness timer,circuit training,gym time
 ```
 Build any interval workout you can imagine — run it with a big countdown ring and haptic
 cues. 100% offline, no account needed.
+```
+
+## What's New (Version 1.3)
+
+```
+- A brand-new app icon: your workout at a glance — colored interval bars whose
+  lengths mirror the work and rest segments you build in the app.
 ```
 
 ## What's New (Version 1.2)
