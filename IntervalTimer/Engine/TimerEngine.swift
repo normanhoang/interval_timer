@@ -100,6 +100,16 @@ final class TimerEngine {
         totalRemaining = max(0, Double(total) - elapsed)
     }
 
+    /// Frame-rate read for the ring: current segment fraction computed straight
+    /// from the timestamp math, independent of the 100ms ticker. Pure read — no
+    /// state writes, so it's safe to call from a TimelineView every frame.
+    func fractionNow() -> Double {
+        guard phase == .running else { return fraction }
+        let pos = TimerEngineMath.segmentAt(segments, elapsed: elapsedNow())
+        if pos.done { return 0 }
+        return pos.remaining / Double(segments[pos.index].seconds)
+    }
+
     private func setElapsed(_ seconds: Double) {
         let pausedMs = pausedAccum + (pausedAt.map { Date().timeIntervalSince($0) } ?? 0)
         startedAt = Date().addingTimeInterval(-pausedMs - seconds)

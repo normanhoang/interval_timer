@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Circular ring whose stroke depletes as `progress` (fraction remaining, 1 = full)
-/// drops. Animates with a short linear timing so 100ms ticks read as continuous.
+/// drops. The short linear timing smooths discrete updates (skips, 100ms ticks);
+/// frame-rate callers (TimelineView) barely engage it.
 struct ProgressRing<Content: View>: View {
     var size: CGFloat
     var strokeWidth: CGFloat

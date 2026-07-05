@@ -40,7 +40,7 @@ struct RootTabView: View {
             .foregroundStyle(active ? Color(hex: Palette.primary) : theme.inkMuted)
             .frame(width: 116, height: 46)
             .background {
-                if active { Capsule().fill(theme.glassFill) }
+                if active { Capsule().fill(Color(hex: Palette.primary).opacity(0.18)) }
             }
         }
         .buttonStyle(.plain)

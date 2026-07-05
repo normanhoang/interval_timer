@@ -24,7 +24,7 @@ enum Palette {
     static let cooldown = "#5FB8E0"
     static let ink = "#3B3556"
     static let primary = "#A78BFA"
-    static let start = "#34C759" // "Go" green — Start/play button and icon triangle
+    static let start = "#5FC98A" // "Go" mint — Start/play button, tuned to the interval palette
 
     /// Perceived-luminance check for picking a readable foreground on a swatch.
     static func isLight(_ hex: String) -> Bool {

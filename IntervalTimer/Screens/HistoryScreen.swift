@@ -37,7 +37,6 @@ struct HistoryScreen: View {
                         emptyState(theme).plainRow()
                     } else {
                         sessionSections(theme)
-                        clearButton(theme).plainRow()
                     }
                 }
                 .listStyle(.plain)
@@ -58,19 +57,32 @@ struct HistoryScreen: View {
     }
 
     private func header(_ theme: ThemeColors) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("INTERVAL PULSE TIMER").font(.caption.weight(.semibold)).tracking(2)
-                .foregroundStyle(theme.ink.opacity(0.4))
-            Text("History").font(.system(size: 34, weight: .bold)).foregroundStyle(theme.ink)
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("INTERVAL PULSE TIMER").font(.caption.weight(.semibold)).tracking(2)
+                    .foregroundStyle(theme.ink.opacity(0.4))
+                Text("History").font(.system(size: 34, weight: .bold)).foregroundStyle(theme.ink)
+            }
+            Spacer()
+            if !sessions.isEmpty {
+                Button { showClearConfirm = true } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17))
+                        .foregroundStyle(theme.ink)
+                        .frame(width: 44, height: 44)
+                        .glassChrome(radius: 22)
+                }
+                .buttonStyle(.pressableScale)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24).padding(.bottom, 12)
     }
 
     private func statsGrid(streak: Int, thisWeek: Int, total: Int, theme: ThemeColors) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                stat("\(streak)", "Day streak", "flame", theme)
+                stat("\(streak)", "Day streak", "flame", theme,
+                     iconTint: streak >= 2 ? Color(hex: "#FFB27A") : nil)
                 stat("\(thisWeek)", "This week", "calendar", theme)
             }
             HStack(spacing: 12) {
@@ -80,14 +92,15 @@ struct HistoryScreen: View {
         }
     }
 
-    private func stat(_ value: String, _ label: String, _ icon: String, _ theme: ThemeColors) -> some View {
+    private func stat(_ value: String, _ label: String, _ icon: String, _ theme: ThemeColors,
+                      iconTint: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top) {
                 Text(value).font(.title2.weight(.bold)).foregroundStyle(theme.ink)
                 Spacer()
-                Image(systemName: icon).font(.system(size: 14)).foregroundStyle(theme.inkMuted)
+                Image(systemName: icon).font(.system(size: 14)).foregroundStyle(iconTint ?? theme.inkMuted)
             }
-            Text(label).font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.5))
+            Text(label).font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.6))
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).panel()
     }
@@ -135,7 +148,7 @@ struct HistoryScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.workoutName).font(.body.weight(.semibold)).foregroundStyle(theme.ink)
                 Text(session.completedAt.formatted(date: .omitted, time: .shortened))
-                    .font(.caption).foregroundStyle(theme.ink.opacity(0.4))
+                    .font(.caption).foregroundStyle(theme.ink.opacity(0.55))
             }
             Spacer()
             Text(TimerEngineMath.formatSeconds(session.totalSeconds))
@@ -156,14 +169,6 @@ struct HistoryScreen: View {
                 .font(.subheadline).foregroundStyle(theme.ink.opacity(0.4)).multilineTextAlignment(.center)
         }
         .padding(32).frame(maxWidth: .infinity).panel().padding(.top, 8)
-    }
-
-    private func clearButton(_ theme: ThemeColors) -> some View {
-        Button { showClearConfirm = true } label: {
-            Text("Clear history").font(.subheadline.weight(.semibold)).foregroundStyle(.pink)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain).padding(.top, 16)
     }
 
     // MARK: helpers

@@ -9,6 +9,7 @@ struct RunScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppSettings.self) private var settings
 
     @State private var engine: TimerEngine
@@ -60,7 +61,7 @@ struct RunScreen: View {
             UIApplication.shared.isIdleTimerDisabled = false
         }
         .onChange(of: engine.remaining) { _, new in
-            if engine.phase == .running, new > 0, new <= 3 {
+            if !reduceMotion, engine.phase == .running, new > 0, new <= 3 {
                 pulse = 1.08
                 withAnimation(.easeOut(duration: 0.34)) { pulse = 1 }
             }
@@ -103,24 +104,30 @@ struct RunScreen: View {
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
         return VStack(spacing: 0) {
             Spacer()
-            ProgressRing(size: 320, strokeWidth: 16, progress: engine.fraction,
-                         color: Color(hex: segment?.color ?? Palette.preroll)) {
-                VStack(spacing: 6) {
-                    Text(ringTopLabel(segment))
-                        .font(.caption.weight(.semibold)).tracking(2).textCase(.uppercase)
-                        .foregroundStyle(theme.ink.opacity(0.4))
-                    Text(TimerEngineMath.formatSeconds(engine.remaining))
-                        .font(.system(size: 72, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(theme.ink)
-                        .scaleEffect(pulse)
-                    Text(segment?.label ?? "")
-                        .font(.title3.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.6))
-                }
+            TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused || done)) { _ in
+                ring(segment, theme)
             }
             nextPill(next, theme).padding(.top, 24)
             Spacer()
             progressBar(theme).padding(.bottom, 24)
             controls(theme)
+        }
+    }
+
+    private func ring(_ segment: Segment?, _ theme: ThemeColors) -> some View {
+        ProgressRing(size: 320, strokeWidth: 16, progress: engine.fractionNow(),
+                     color: Color(hex: segment?.color ?? Palette.preroll)) {
+            VStack(spacing: 6) {
+                Text(ringTopLabel(segment))
+                    .font(.caption.weight(.semibold)).tracking(2).textCase(.uppercase)
+                    .foregroundStyle(theme.ink.opacity(0.5))
+                Text(TimerEngineMath.formatSeconds(engine.remaining))
+                    .font(.system(size: 72, weight: .bold)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+                    .scaleEffect(pulse)
+                Text(segment?.label ?? "")
+                    .font(.title3.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.6))
+            }
         }
     }
 
@@ -164,7 +171,7 @@ struct RunScreen: View {
             }
             .frame(height: 10)
             Text("\(TimerEngineMath.formatSeconds(engine.totalRemaining)) left")
-                .font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.4))
+                .font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.55))
         }
     }
 

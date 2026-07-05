@@ -20,6 +20,7 @@ struct Confetti: View {
     private let maxWave = 2 * 0.12
 
     @State private var finished = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(count: Int = 90) {
         let colors = Palette.intervalColors.map { Color(hex: $0) }
@@ -35,6 +36,14 @@ struct Confetti: View {
     }
 
     var body: some View {
+        if reduceMotion {
+            Color.clear
+        } else {
+            burst
+        }
+    }
+
+    private var burst: some View {
         TimelineView(.animation(minimumInterval: nil, paused: finished)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(start)
             Canvas { ctx, size in

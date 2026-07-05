@@ -45,7 +45,7 @@ struct MonthCalendar: View {
                 ForEach(Array(weekdays.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.ink.opacity(0.3))
+                        .foregroundStyle(theme.ink.opacity(0.45))
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -80,7 +80,7 @@ struct MonthCalendar: View {
             } label: {
                 Text("\(day)")
                     .font(.subheadline.weight(marked ? .bold : .medium))
-                    .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.25) : theme.ink.opacity(0.6)))
+                    .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.4) : theme.ink.opacity(0.75)))
                     .frame(width: 36, height: 36)
                     .background {
                         if selected {

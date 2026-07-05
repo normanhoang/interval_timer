@@ -139,13 +139,13 @@ private struct WorkoutCard: View {
                         .foregroundStyle(theme.ink)
                     Text("\(TimerEngineMath.formatSeconds(total)) · \(workout.repeats) \(workout.repeats == 1 ? "round" : "rounds")")
                         .font(.subheadline)
-                        .foregroundStyle(theme.ink.opacity(0.5))
+                        .foregroundStyle(theme.ink.opacity(0.65))
                 }
                 Spacer()
                 Button(action: onPlay) {
                     Image(systemName: "play.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.isLight(Palette.start) ? Color(hex: Palette.ink) : .white)
                         .offset(x: 1)
                         .frame(width: 56, height: 56)
                         .background(Circle().fill(Color(hex: Palette.start)))
