@@ -14,8 +14,8 @@ struct HistoryScreen: View {
     }
 
     private var visibleSessions: [Session] {
-        guard let selectedDay else { return sessions }
-        return sessions.filter { CalendarMath.dayKey($0.completedAt) == selectedDay }
+        let day = selectedDay ?? CalendarMath.dayKey(.now)
+        return sessions.filter { CalendarMath.dayKey($0.completedAt) == day }
     }
 
     var body: some View {
@@ -31,10 +31,11 @@ struct HistoryScreen: View {
                 List {
                     statsGrid(streak: streak, thisWeek: thisWeek, total: total, theme: theme).plainRow()
                     MonthCalendar(markedDays: markedDays, selectedDay: $selectedDay).plainRow()
-                    if let selectedDay { showAllPill(selectedDay, theme).plainRow() }
 
                     if sessions.isEmpty {
                         emptyState(theme).plainRow()
+                    } else if visibleSessions.isEmpty {
+                        selectDayHint(theme).plainRow()
                     } else {
                         sessionSections(theme)
                     }
@@ -105,21 +106,6 @@ struct HistoryScreen: View {
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).panel()
     }
 
-    private func showAllPill(_ day: String, _ theme: ThemeColors) -> some View {
-        Button { selectedDay = nil } label: {
-            HStack(spacing: 6) {
-                Text("Showing \(prettyDay(day)) · Show all")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.7))
-                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkMuted)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 8)
-            .background(Capsule().fill(theme.glassFill))
-            .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
-    }
-
     @ViewBuilder
     private func sessionSections(_ theme: ThemeColors) -> some View {
         ForEach(groupByDay(visibleSessions), id: \.label) { group in
@@ -169,6 +155,13 @@ struct HistoryScreen: View {
                 .font(.subheadline).foregroundStyle(theme.ink.opacity(0.4)).multilineTextAlignment(.center)
         }
         .padding(32).frame(maxWidth: .infinity).panel().padding(.top, 8)
+    }
+
+    private func selectDayHint(_ theme: ThemeColors) -> some View {
+        Text("Tap a day to see its sessions")
+            .font(.subheadline).foregroundStyle(theme.ink.opacity(0.4))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity).padding(.top, 24)
     }
 
     // MARK: helpers

@@ -140,8 +140,9 @@ landscape isn't applicable to this app's supported orientations.
 | `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 | `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 
-Phone shots captured on Simulator: Workouts tab (seeded workouts) and History tab with one
-completed session, showing streak/stats and the habit-tracking calendar. Watch shots
+Phone shots captured on Simulator: Workouts tab (seeded workouts) and History tab defaulting
+to today's completed session, with streak/stats and the habit-tracking calendar showing
+marked days. Watch shots
 captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
 the run screen's timer page (ring, round, next-up).
 
