@@ -14,12 +14,22 @@ sound/haptics toggles and a System/Light/Dark theme selector. All data is **loca
 This is a native rewrite of a former Expo/React Native app; behavior is preserved
 screen-for-screen.
 
+An **Apple Watch companion** (`IntervalTimerWatch/`) lists phone-created workouts and runs
+them with full controls; workouts mirror phone→watch and finished watch runs land in the
+phone's History via WatchConnectivity (still no network — device-to-device only). The watch
+is always dark (watchOS has no light mode); no editing on watch.
+
 ## Stack
 
-- **SwiftUI** (iOS 17.0 deployment target), **SwiftData** for persistence
+- **SwiftUI** (iOS 17.0 / watchOS 10.0 deployment targets), **SwiftData** for persistence
+  (phone only — the watch caches Codable DTOs as JSON)
 - **Swift 5**, Xcode 26
 - No third-party packages. Project is generated from `project.yml` via **XcodeGen** — the
   `.xcodeproj` is git-ignored and regenerated, never edited by hand.
+- Two app targets: `IntervalTimer` (iOS) and `IntervalTimerWatch` (watchOS companion,
+  embedded via target dependency). The watch target compiles a subset of the phone's
+  sources directly (Models, Engine, Theme, Cues, Settings, ProgressRing, Encouragements,
+  Sync, Sounds) — listed file-by-file in `project.yml`.
 
 ## Commands
 
@@ -29,6 +39,8 @@ xcodebuild -project IntervalTimer.xcodeproj -scheme IntervalTimer \
   -destination 'platform=iOS Simulator,name=iPhone 17' build                         # build
 xcodebuild test -project IntervalTimer.xcodeproj -scheme IntervalTimer \
   -destination 'platform=iOS Simulator,name=iPhone 17'                               # unit tests (pure logic)
+xcodebuild -project IntervalTimer.xcodeproj -scheme IntervalTimerWatch \
+  -destination 'generic/platform=watchOS Simulator' build                            # watch app build
 ```
 
 Run on simulator:
@@ -74,11 +86,27 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 - XCUITest + SwiftUI quirks: buttons often report `isHittable == false` — tap
   `element.coordinate(withNormalizedOffset: .init(dx: 0.5, dy: 0.5))` instead; a `Toggle`
   shows up as duplicate nested switch elements (pick one per row by frame position).
+- Watch sims: a paired pair exists ("Watch S11 42mm (claude)" ↔ iPhone 17 Pro). If the
+  watchOS platform is missing, `xcodebuild -downloadPlatform watchOS` first; create + pair
+  via `xcrun simctl create` / `xcrun simctl pair`. The temporary-XCUITest pattern above
+  works on watch sims too (same coordinate-tap quirk).
 
 ## Gotchas
 
 - IDE/SourceKit diagnostics show false "Cannot find X in scope" errors across this
   xcodegen project — trust `xcodebuild` output instead.
+- **`transferUserInfo` never delivers between paired simulators** (sender's `didFinish`
+  even reports success). That's why `WatchSync.sendSession` uses `sendMessage` when
+  reachable with `transferUserInfo` as fallback; the phone dedupes by session uuid. Test
+  session sync on sims via the reachable path; queued delivery only on real devices.
+- Installing the dev-signed watch app from the iPhone Watch app fails with "could not be
+  installed at this time" unless (a) the **watch's UDID is in the provisioning profile**
+  (check `security cms -D -i embedded.mobileprovision` → `ProvisionedDevices`; Xcode GUI
+  registers watches, CLI builds don't) and (b) **Developer Mode is on** on the watch. The
+  watch only becomes visible to `devicectl`/CLI after Xcode's Devices window has made first
+  contact with it via the USB-connected phone.
+- Watch sim clocks can be days off from the host — don't trust `completedAt` timestamps
+  from sim-run sessions when eyeballing the History store.
 
 ## Architecture (`IntervalTimer/`)
 
@@ -110,15 +138,31 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ### Stores & audio
 - `Stores/Settings.swift` — `AppSettings` (`@Observable`) over `UserDefaults`; pushes flags
-  into `Cues` on every change. Consumed via `@Environment(AppSettings.self)`.
+  into `Cues` on every change. Consumed via `@Environment(AppSettings.self)`. Shared with
+  the watch (each device keeps its own defaults — watch mute is watch-local).
 - `Stores/Seed.swift` — `seedIfNeeded` inserts "Tabata 20/10" and "Classic HIIT 40/20" the
   first time the store is empty.
+- `Stores/PhoneSync.swift` — iOS half of watch sync (`WCSessionDelegate` singleton, holds
+  the `ModelContainer`). `pushWorkouts()` snapshots the full workout list as JSON
+  `[WorkoutDTO]` into `updateApplicationContext` (latest-wins); called from app launch,
+  editor save/delete, and list reorder — **call it after any new workout mutation**.
+  Receives finished watch sessions (message or userInfo), dedupes by uuid, inserts
+  `Session`.
 - `Audio/Cues.swift` — `Cues.shared` singleton: pooled `AVAudioPlayer`s (replay via
   `currentTime = 0`), `AVAudioSession(.playback, .mixWithOthers)`, and
   `UIImpact`/`UINotificationFeedbackGenerator` haptics. `initialize()`/`release()` on
   run-screen appear/disappear. `previewAlert` plays even when sound cues are off.
+  Platform-split with `#if os(watchOS)`: watch haptics via `WKInterfaceDevice.play`
+  (click / notification / success); the AVFoundation half is shared.
 - `Audio/AlertSounds.swift` — the five selectable alert sounds (filenames in
   `Resources/Sounds/`).
+
+### Sync (`Sync/`) — compiled into both targets
+- `WorkoutDTO.swift` — Codable wire formats: `WorkoutDTO` (mirrors `Workout`, phone→watch)
+  and `SessionDTO` (finished watch run, watch→phone; dictionary of plist-safe values for
+  `transferUserInfo`/`sendMessage`).
+- `SyncKeys.swift` — payload key constants. The applicationContext includes a `Date`
+  revision because identical dictionaries aren't re-sent.
 
 ### Util & theme
 - `Util/CalendarMath.swift` — pure, unit-tested: `dayKey`, `monthMatrix` (Sunday-first,
@@ -160,8 +204,33 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ### Resources
 - `Resources/Sounds/` — five `alert-*.wav` + `tick.wav` + `finish.wav` (bundled, loaded by
-  filename). `Resources/Assets.xcassets` — single-size `AppIcon` + `AccentColor` (#A78BFA).
+  filename; also bundled into the watch app). `Resources/Assets.xcassets` — single-size
+  `AppIcon` + `AccentColor` (#A78BFA).
+
+## Watch app (`IntervalTimerWatch/`)
+
+- `IntervalTimerWatchApp.swift` — `@main`; watch-local `AppSettings`; activates `WatchSync`;
+  `NavigationStack` root.
+- `WatchSync.swift` — watch half of sync: applies `receivedApplicationContext` on
+  activation (catches pushes made while the app was closed) + live context updates into
+  `WorkoutStore`; `sendSession` = `sendMessage` when reachable, else/on-error
+  `transferUserInfo` (see Gotchas).
+- `WorkoutStore.swift` — `@Observable` singleton; `[WorkoutDTO]` sorted by `order`,
+  persisted as JSON in Application Support so the list works offline at launch.
+- `WorkoutSessionController.swift` — `HKWorkoutSession` (`.highIntensityIntervalTraining`)
+  purely as wrist-down keep-alive during a run; **no builder attached, nothing written to
+  Health**; no-op on simulator (auth sheet blocks automation). Needs the HealthKit
+  entitlement + `WKBackgroundModes: workout-processing` (in `project.yml` / `Info.plist`).
+- `Views/WorkoutsListView.swift` — workout rows (name, duration, interval color dots);
+  empty state points to the iPhone.
+- `Views/WatchRunView.swift` — condensed `RunScreen` mirror: horizontal two-page `TabView`
+  (controls page: End w/ confirm, mute, pause, skip± | timer page: `ProgressRing` at 30fps,
+  round, next-up, total remaining), same engine/cues wiring, finish view (encouragement /
+  Done / Repeat). Recording sends a `SessionDTO` instead of touching SwiftData. Back-swipe
+  is disabled mid-run — End is the only exit.
 
 ## Tests (`IntervalTimerTests/`)
 `TimerTests` and `CalendarTests` cover the pure engine/calendar math (ported from the
 original Jest suite). Run them after touching anything in `Engine/` or `Util/`.
+`ProgressRingTests` renders the ring via `ImageRenderer` and pixel-checks that depletion
+starts at top center (guards the round-cap overhang regression).
