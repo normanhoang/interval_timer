@@ -25,12 +25,20 @@ struct IntervalTimerApp: App {
         }
     }()
 
+    init() {
+        PhoneSync.shared.configure(container: container)
+        PhoneSync.shared.activate()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootTabView()
                 .environment(settings)
                 .preferredColorScheme(settings.theme.colorScheme)
-                .task { seedIfNeeded(container.mainContext) }
+                .task {
+                    seedIfNeeded(container.mainContext)
+                    PhoneSync.shared.pushWorkouts()
+                }
         }
         .modelContainer(container)
     }

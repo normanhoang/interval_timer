@@ -118,6 +118,7 @@ struct WorkoutsScreen: View {
         ordered.move(fromOffsets: offsets, toOffset: destination)
         for (i, workout) in ordered.enumerated() { workout.order = i }
         try? context.save()
+        PhoneSync.shared.pushWorkouts()
     }
 }
 

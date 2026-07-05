@@ -372,11 +372,13 @@ struct WorkoutEditorScreen: View {
                                    order: order))
         }
         try? context.save()
+        PhoneSync.shared.pushWorkouts()
         dismiss()
     }
 
     private func deleteWorkout() {
         if let existing { context.delete(existing); try? context.save() }
+        PhoneSync.shared.pushWorkouts()
         dismiss()
     }
 }

@@ -1,5 +1,9 @@
 import AVFoundation
+#if os(watchOS)
+import WatchKit
+#else
 import UIKit
+#endif
 
 /// Sound + haptic cues (mirrors RN lib/cues.ts). Plays in silent mode,
 /// mixes with other audio. Players are pooled and replayed via seek-to-zero.
@@ -19,9 +23,11 @@ final class Cues {
     private var hapticsOn = true
     private var alertId = AlertSounds.defaultId
 
+    #if !os(watchOS)
     private let lightImpact = UIImpactFeedbackGenerator(style: .light)
     private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
     private let notify = UINotificationFeedbackGenerator()
+    #endif
 
     private init() {}
 
@@ -33,9 +39,11 @@ final class Cues {
     }
 
     func initialize() {
+        #if !os(watchOS)
         lightImpact.prepare()
         mediumImpact.prepare()
         notify.prepare()
+        #endif
         queue.async { self.load() }
     }
 
@@ -87,7 +95,13 @@ final class Cues {
 
     func countdown() {
         if soundOn { queue.async { self.replay(self.tick) } }
-        if hapticsOn { lightImpact.impactOccurred() }
+        if hapticsOn {
+            #if os(watchOS)
+            WKInterfaceDevice.current().play(.click)
+            #else
+            lightImpact.impactOccurred()
+            #endif
+        }
     }
 
     func segmentChange() {
@@ -95,11 +109,23 @@ final class Cues {
             let id = alertId
             queue.async { self.replay(self.alerts[id] ?? self.alerts[AlertSounds.defaultId]) }
         }
-        if hapticsOn { mediumImpact.impactOccurred() }
+        if hapticsOn {
+            #if os(watchOS)
+            WKInterfaceDevice.current().play(.notification)
+            #else
+            mediumImpact.impactOccurred()
+            #endif
+        }
     }
 
     func finishCue() {
         if soundOn { queue.async { self.replay(self.finish) } }
-        if hapticsOn { notify.notificationOccurred(.success) }
+        if hapticsOn {
+            #if os(watchOS)
+            WKInterfaceDevice.current().play(.success)
+            #else
+            notify.notificationOccurred(.success)
+            #endif
+        }
     }
 }
