@@ -48,6 +48,7 @@ struct HistoryScreen: View {
             .appBackground()
             .toolbar(.hidden, for: .navigationBar)
         }
+        .onAppear { selectedDay = nil }
         .confirmationDialog("Clear history?", isPresented: $showClearConfirm, titleVisibility: .visible) {
             Button("Clear \(clearDayName)") { clearDay() }
             Button("Clear all", role: .destructive) { clearAll() }

@@ -76,7 +76,7 @@ struct MonthCalendar: View {
             let day = Calendar.current.component(.day, from: date)
 
             Button {
-                if marked { selectedDay = selected ? nil : key }
+                selectedDay = selected ? nil : key
             } label: {
                 Text("\(day)")
                     .font(.subheadline.weight(marked ? .bold : .medium))
@@ -94,7 +94,6 @@ struct MonthCalendar: View {
                     }
             }
             .buttonStyle(.plain)
-            .disabled(!marked)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
         } else {
