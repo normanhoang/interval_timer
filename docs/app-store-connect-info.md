@@ -137,14 +137,12 @@ landscape isn't applicable to this app's supported orientations.
 |---|---|---|
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
-| `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 46mm (standard bucket) |
-| `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 46mm (standard bucket) |
-| `screenshots/watch/49mm-ultra-workouts.png` | 422 × 514 | Apple Watch Ultra 49mm |
-| `screenshots/watch/49mm-ultra-run.png` | 422 × 514 | Apple Watch Ultra 49mm |
+| `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
+| `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 
 Phone shots captured on Simulator: Workouts tab (seeded workouts) and History tab with one
 completed session, showing streak/stats and the habit-tracking calendar. Watch shots
-captured on the paired watch simulators (synced workouts from phone): the Workouts list and
+captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
 the run screen's timer page (ring, round, next-up).
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
