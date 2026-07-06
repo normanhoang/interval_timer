@@ -148,8 +148,10 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   editor save/delete, and list reorder — **call it after any new workout mutation**.
   Receives finished watch sessions (message or userInfo), dedupes by uuid, inserts
   `Session`. Also answers live cue-relay messages from a watch run: replies with
-  `isOtherAudioPlaying` and, when the phone *is* playing audio (e.g. music to AirPods),
-  replays the beep locally via `Cues.playRelayedCue` so it mixes into that stream.
+  `secondaryAudioShouldBeSilencedHint` (not `isOtherAudioPlaying`, which false-positives
+  on inaudible/mixable background sessions) and, when the phone *is* playing audio (e.g.
+  music to AirPods), replays the beep locally via `Cues.playRelayedCue` so it mixes into
+  that stream.
 - `Audio/Cues.swift` — `Cues.shared` singleton: pooled `AVAudioPlayer`s (replay via
   `currentTime = 0`), `AVAudioSession(.playback, .mixWithOthers)`, and
   `UIImpact`/`UINotificationFeedbackGenerator` haptics. `initialize()`/`release()` on

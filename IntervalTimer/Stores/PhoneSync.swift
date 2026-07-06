@@ -60,13 +60,17 @@ final class PhoneSync: NSObject, WCSessionDelegate {
         ingestSession(message)
     }
 
-    /// Cues arrive on this variant (the watch wants `isOtherAudioPlaying` back
-    /// to decide whether its own speaker should stay quiet). Only worth beeping
-    /// here when the phone owns an audio stream the watch can't reach.
+    /// Cues arrive on this variant (the watch wants to know whether the phone is
+    /// playing audio, to decide whether its own speaker should stay quiet). Only
+    /// worth beeping here when the phone owns an audio stream the watch can't reach.
+    /// Use `secondaryAudioShouldBeSilencedHint` rather than `isOtherAudioPlaying`:
+    /// the latter also reports inaudible/mixable background sessions (and is a
+    /// false positive with Accessibility → Sound Recognition), which would wrongly
+    /// mute the watch and leave only delayed phone beeps.
     func session(_ session: WCSession, didReceiveMessage message: [String: Any],
                  replyHandler: @escaping ([String: Any]) -> Void) {
         if let kind = message[SyncKeys.cueKind] as? String {
-            let phoneAudio = AVAudioSession.sharedInstance().isOtherAudioPlaying
+            let phoneAudio = AVAudioSession.sharedInstance().secondaryAudioShouldBeSilencedHint
             if phoneAudio, kind != "status" {
                 Cues.shared.playRelayedCue(kind: kind, alertId: message[SyncKeys.cueAlert] as? String)
             }
