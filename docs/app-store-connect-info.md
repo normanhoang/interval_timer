@@ -54,7 +54,9 @@ without looking at your phone.
 
 FEATURES
 • Build unlimited custom workouts with named, colored, timed intervals
-• Optional warm-up and cool-down segments that run once, not per round
+• Apple Watch app — start any workout from your wrist with full run controls,
+  and finished workouts sync back to History on your iPhone
+• Optional warm-up and cool-down segments (with their own colors) that run once, not per round
 • Repeat any workout for 1–99 rounds, or instantly re-run it from the finish screen
 • Drag to reorder workouts and intervals
 • Big countdown ring with round progress and "next up" preview
@@ -86,7 +88,10 @@ cues. 100% offline, no account needed.
 ```
 - Apple Watch app: start any of your workouts from your wrist — full run
   controls (pause, skip, end, mute), haptic and sound cues, and finished
-  workouts sync back to History on your iPhone.
+  workouts sync back to History on your iPhone. Listening to music on your
+  iPhone? Watch-run beeps play through it so you never miss a cue.
+- Pick a color for your warm-up and cool-down segments.
+- History now opens to today's sessions — tap any calendar day to look back.
 ```
 
 ## What's New (Version 1.3)
@@ -144,7 +149,7 @@ Phone shots captured on Simulator: Workouts tab (seeded workouts) and History ta
 to today's completed session, with streak/stats and the habit-tracking calendar showing
 marked days. Watch shots
 captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
-the run screen's timer page (ring, round, next-up).
+the single-page run screen (controls, progress bar countdown, round, next-up).
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
 

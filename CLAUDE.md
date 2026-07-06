@@ -28,8 +28,8 @@ is always dark (watchOS has no light mode); no editing on watch.
   `.xcodeproj` is git-ignored and regenerated, never edited by hand.
 - Two app targets: `IntervalTimer` (iOS) and `IntervalTimerWatch` (watchOS companion,
   embedded via target dependency). The watch target compiles a subset of the phone's
-  sources directly (Models, Engine, Theme, Cues, Settings, ProgressRing, Encouragements,
-  Sync, Sounds) — listed file-by-file in `project.yml`.
+  sources directly (Models, Engine, Theme, Cues, Settings, Encouragements, Sync, Sounds)
+  — listed file-by-file in `project.yml`.
 
 ## Commands
 
@@ -116,15 +116,15 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ### Models (`Models/`)
 - `Workout.swift` — `@Model Workout` (has `uuid`, `name`, `intervals: [Interval]`,
-  `repeats`, `warmupSeconds`/`cooldownSeconds` (once-only segments, 0 = off),
-  `createdAt`, `order`) and `@Model Session`. `Interval` is a `Codable` struct
+  `repeats`, `warmupSeconds`/`cooldownSeconds` (once-only segments, 0 = off) with
+  `warmupColor`/`cooldownColor`, `createdAt`, `order`) and `@Model Session`. `Interval` is a `Codable` struct
   stored inline on the workout. **Note:** the domain id field is named `uuid`, not `id`,
   to avoid clashing with SwiftData/`Identifiable`. `order` gives the Workouts list a manual
   sort (SwiftData has no inherent order); reordering rewrites it.
 
 ### Engine (`Engine/`) — pure, unit-tested
 - `Segment.swift` — `TimerEngineMath` namespace:
-  `flattenWorkout(intervals:repeats:prerollSeconds:warmupSeconds:cooldownSeconds:)`
+  `flattenWorkout(intervals:repeats:prerollSeconds:warmupSeconds:cooldownSeconds:warmupColor:cooldownColor:)`
   expands rounds (+ optional "Get ready" pre-roll and once-only warm up / cool down —
   all `round: 0`, `intervalIndex: -1`, so the ring hides the round counter for them)
   into `Segment`s with cumulative `startsAt`; `segmentAt(_:elapsed:)` (an elapsed exactly on a segment edge belongs to the
@@ -147,13 +147,19 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   `[WorkoutDTO]` into `updateApplicationContext` (latest-wins); called from app launch,
   editor save/delete, and list reorder — **call it after any new workout mutation**.
   Receives finished watch sessions (message or userInfo), dedupes by uuid, inserts
-  `Session`.
+  `Session`. Also answers live cue-relay messages from a watch run: replies with
+  `isOtherAudioPlaying` and, when the phone *is* playing audio (e.g. music to AirPods),
+  replays the beep locally via `Cues.playRelayedCue` so it mixes into that stream.
 - `Audio/Cues.swift` — `Cues.shared` singleton: pooled `AVAudioPlayer`s (replay via
   `currentTime = 0`), `AVAudioSession(.playback, .mixWithOthers)`, and
   `UIImpact`/`UINotificationFeedbackGenerator` haptics. `initialize()`/`release()` on
   run-screen appear/disappear. `previewAlert` plays even when sound cues are off.
-  Platform-split with `#if os(watchOS)`: watch haptics via `WKInterfaceDevice.play`
-  (click / notification / success); the AVFoundation half is shared.
+  Re-activates the audio session (re-asserting `.mixWithOthers`) after interruptions and
+  route changes — nothing else recovers it. Platform-split with `#if os(watchOS)`: watch
+  haptics via `WKInterfaceDevice.play` (click / notification / success); the AVFoundation
+  half is shared. Cue-relay hooks: `playRelayedCue` (phone side, plays a watch-run beep
+  ignoring the local sound toggle) and `phoneAudioActive` (watch side — while true the
+  watch speaker stays quiet because the phone is beeping; never gates haptics).
 - `Audio/AlertSounds.swift` — the five selectable alert sounds (filenames in
   `Resources/Sounds/`).
 
@@ -161,8 +167,9 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 - `WorkoutDTO.swift` — Codable wire formats: `WorkoutDTO` (mirrors `Workout`, phone→watch)
   and `SessionDTO` (finished watch run, watch→phone; dictionary of plist-safe values for
   `transferUserInfo`/`sendMessage`).
-- `SyncKeys.swift` — payload key constants. The applicationContext includes a `Date`
-  revision because identical dictionaries aren't re-sent.
+- `SyncKeys.swift` — payload key constants: applicationContext (includes a `Date`
+  revision because identical dictionaries aren't re-sent), finished-session transfer, and
+  the live cue relay (`cue.kind`/`cue.alert` watch→phone, `cue.phoneAudio` in the reply).
 
 ### Util & theme
 - `Util/CalendarMath.swift` — pure, unit-tested: `dayKey`, `monthMatrix` (Sunday-first,
@@ -188,8 +195,8 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   button → `RunScreen` fullScreenCover; card tap → editor sheet; `EditButton` toggles
   drag-reorder).
 - `WorkoutEditorScreen` — sheet; name, rounds stepper (1–99), independent warm-up /
-  cool-down toggle rows (fixed label+color, duration wheel, 60s default on enable),
-  interval `List` (`.onMove` reorder + `.swipeActions` delete), per-row color/duration
+  cool-down toggle rows (duration wheel, 60s default on enable, tappable color swatch →
+  picker sheet), interval `List` (`.onMove` reorder + `.swipeActions` delete), per-row color/duration
   sheets (`.presentationDetents`; closing a 0s duration clamps to 1s), total footer,
   save/delete.
 - `RunScreen` — fullScreenCover, keep-awake (`isIdleTimerDisabled`), 3s pre-roll, ring +
@@ -197,8 +204,10 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   random encouragement + Done + "Repeat workout" (rebuilds the engine and re-runs from
   the pre-roll; each completion inserts its own `Session`). Ending early records nothing.
 - `HistoryScreen` — stat panels (streak / this-week / total workouts / total time),
-  `MonthCalendar` (tap a marked day to filter, "Show all" clears), sessions grouped
-  Today/Yesterday/weekday with swipe-to-delete, Clear history (clear day or all).
+  `MonthCalendar` (any day tappable — marked days show a dot; selection filters the list),
+  session list shows one day at a time and defaults to today (reset to today every time
+  the tab appears), rows grouped Today/Yesterday/weekday with swipe-to-delete, Clear
+  history (clear day or all).
 - `SettingsScreen` — sheet: appearance pills, Sound/Haptics toggles, alert-sound list
   (tap = select + preview).
 
@@ -214,7 +223,9 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 - `WatchSync.swift` — watch half of sync: applies `receivedApplicationContext` on
   activation (catches pushes made while the app was closed) + live context updates into
   `WorkoutStore`; `sendSession` = `sendMessage` when reachable, else/on-error
-  `transferUserInfo` (see Gotchas).
+  `transferUserInfo` (see Gotchas); `sendCue` relays each run beep to the phone
+  (`sendMessage` only — a late cue is noise, so no queued fallback) and sets
+  `Cues.phoneAudioActive` from the reply so exactly one device beeps.
 - `WorkoutStore.swift` — `@Observable` singleton; `[WorkoutDTO]` sorted by `order`,
   persisted as JSON in Application Support so the list works offline at launch.
 - `WorkoutSessionController.swift` — `HKWorkoutSession` (`.highIntensityIntervalTraining`)
@@ -223,11 +234,14 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   entitlement + `WKBackgroundModes: workout-processing` (in `project.yml` / `Info.plist`).
 - `Views/WorkoutsListView.swift` — workout rows (name, duration, interval color dots);
   empty state points to the iPhone.
-- `Views/WatchRunView.swift` — condensed `RunScreen` mirror: horizontal two-page `TabView`
-  (controls page: End w/ confirm, mute, pause, skip± | timer page: `ProgressRing` at 30fps,
-  round, next-up, total remaining), same engine/cues wiring, finish view (encouragement /
+- `Views/WatchRunView.swift` — condensed `RunScreen` mirror on a single combined page:
+  top control row (End w/ confirm, mute, pause), `LinearProgressBar` + countdown at 30fps,
+  round, next-up, total remaining, skip± row. Same engine/cues wiring, plus each cue is
+  relayed to the phone via `WatchSync.sendCue` (see Sync). Finish view (encouragement /
   Done / Repeat). Recording sends a `SessionDTO` instead of touching SwiftData. Back-swipe
   is disabled mid-run — End is the only exit.
+- `Views/LinearProgressBar.swift` — horizontal watch-only replacement for the phone's
+  circular `ProgressRing` (frees vertical space for the combined run page).
 
 ## Tests (`IntervalTimerTests/`)
 `TimerTests` and `CalendarTests` cover the pure engine/calendar math (ported from the
