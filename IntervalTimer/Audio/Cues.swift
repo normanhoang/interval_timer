@@ -17,6 +17,11 @@ final class Cues {
     private var finish: AVAudioPlayer?
     private var alerts: [String: AVAudioPlayer] = [:]
     private var ready = false
+    #if os(iOS)
+    // Looping silent audio kept playing while a run is in the background so iOS
+    // doesn't suspend the app — the timer keeps firing and beeps stay on-time.
+    private var silence: AVAudioPlayer?
+    #endif
     private var interruptionObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
 
@@ -64,6 +69,10 @@ final class Cues {
         for sound in AlertSounds.all {
             alerts[sound.id] = player(named: sound.file)
         }
+        #if os(iOS)
+        silence = player(named: "silence")
+        silence?.numberOfLoops = -1
+        #endif
         ready = true
     }
 
@@ -98,6 +107,10 @@ final class Cues {
             self.tick = nil
             self.finish = nil
             self.alerts.removeAll()
+            #if os(iOS)
+            self.silence?.stop()
+            self.silence = nil
+            #endif
             self.ready = false
             if let token = self.interruptionObserver {
                 NotificationCenter.default.removeObserver(token)
@@ -110,6 +123,17 @@ final class Cues {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
+
+    #if os(iOS)
+    /// Keep the app alive in the background by looping silent audio, so the run's
+    /// timer keeps ticking and beeps fire on time even when minimized/locked.
+    func keepAwake(_ on: Bool) {
+        queue.async {
+            self.load()
+            if on { self.silence?.play() } else { self.silence?.stop() }
+        }
+    }
+    #endif
 
     /// On `queue`.
     private func player(named name: String) -> AVAudioPlayer? {

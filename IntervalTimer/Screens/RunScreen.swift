@@ -53,12 +53,16 @@ struct RunScreen: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             Cues.shared.initialize()
+            Cues.shared.keepAwake(true)
             attachEngineCallbacks()
             engine.start()
+            startLive()
         }
         .onDisappear {
             engine.stop()
+            Cues.shared.keepAwake(false)
             Cues.shared.release()
+            RunLiveActivityController.shared.end()
             UIApplication.shared.isIdleTimerDisabled = false
         }
         .onChange(of: engine.remaining) { _, new in
@@ -178,14 +182,17 @@ struct RunScreen: View {
 
     private func controls(_ theme: ThemeColors) -> some View {
         HStack(spacing: 20) {
-            controlButton("backward.end.fill", size: 52, theme) { engine.skipPrev() }
-            Button { paused ? engine.resume() : engine.pause() } label: {
+            controlButton("backward.end.fill", size: 52, theme) { engine.skipPrev(); updateLive() }
+            Button {
+                if paused { engine.resume() } else { engine.pause() }
+                updateLive()
+            } label: {
                 Image(systemName: paused ? "play.fill" : "pause.fill")
                     .font(.system(size: 30)).foregroundStyle(theme.ink)
                     .offset(x: paused ? 2 : 0)
                     .frame(width: 80, height: 80).glassChrome(radius: 40)
             }
-            controlButton("forward.end.fill", size: 52, theme) { engine.skipNext() }
+            controlButton("forward.end.fill", size: 52, theme) { engine.skipNext(); updateLive() }
         }
         .buttonStyle(.pressableScale)
     }
@@ -231,11 +238,40 @@ struct RunScreen: View {
         }
     }
 
+    // MARK: Live Activity
+
+    private func liveState(_ seg: Segment, remaining: Double, running: Bool) -> RunActivityAttributes.ContentState {
+        let end = Date().addingTimeInterval(remaining)
+        return RunActivityAttributes.ContentState(
+            label: seg.label, colorHex: seg.color, round: seg.round, rounds: seg.rounds,
+            segmentStart: end.addingTimeInterval(-Double(seg.seconds)), segmentEnd: end,
+            frozenRemaining: running ? nil : remaining)
+    }
+
+    private func startLive() {
+        guard let seg = segments.first else { return }
+        RunLiveActivityController.shared.start(
+            workoutName: workout.name,
+            state: liveState(seg, remaining: Double(seg.seconds), running: true))
+    }
+
+    /// Reflect the engine's current segment/phase on the Live Activity (pause/resume/skip).
+    private func updateLive() {
+        guard let seg = engine.segment else { return }
+        let remaining = engine.fractionNow() * Double(seg.seconds)
+        RunLiveActivityController.shared.update(
+            liveState(seg, remaining: remaining, running: engine.phase == .running))
+    }
+
     private func attachEngineCallbacks() {
-        engine.onSegmentChange = { index, _ in if index > 0 { Cues.shared.segmentChange() } }
+        engine.onSegmentChange = { index, seg in
+            if index > 0 { Cues.shared.segmentChange() }
+            RunLiveActivityController.shared.update(liveState(seg, remaining: Double(seg.seconds), running: true))
+        }
         engine.onCountdownTick = { _ in Cues.shared.countdown() }
         engine.onFinish = {
             Cues.shared.finishCue()
+            RunLiveActivityController.shared.end()
             recordSession()
         }
     }
@@ -248,6 +284,7 @@ struct RunScreen: View {
         recorded = false
         encouragement = Encouragements.random()
         engine.start()
+        startLive()
     }
 
     private func recordSession() {
