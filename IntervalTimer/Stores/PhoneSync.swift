@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import SwiftData
 import WatchConnectivity
@@ -57,6 +58,23 @@ final class PhoneSync: NSObject, WCSessionDelegate {
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         ingestSession(message)
+    }
+
+    /// Cues arrive on this variant (the watch wants `isOtherAudioPlaying` back
+    /// to decide whether its own speaker should stay quiet). Only worth beeping
+    /// here when the phone owns an audio stream the watch can't reach.
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any],
+                 replyHandler: @escaping ([String: Any]) -> Void) {
+        if let kind = message[SyncKeys.cueKind] as? String {
+            let phoneAudio = AVAudioSession.sharedInstance().isOtherAudioPlaying
+            if phoneAudio, kind != "status" {
+                Cues.shared.playRelayedCue(kind: kind, alertId: message[SyncKeys.cueAlert] as? String)
+            }
+            replyHandler([SyncKeys.cuePhoneAudio: phoneAudio])
+            return
+        }
+        ingestSession(message)
+        replyHandler([:])
     }
 
     private func ingestSession(_ payload: [String: Any]) {

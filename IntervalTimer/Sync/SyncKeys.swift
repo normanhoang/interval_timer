@@ -8,6 +8,15 @@ enum SyncKeys {
     /// (applicationContext skips dictionaries equal to the last one sent).
     static let payloadRevision = "sync.revision"
 
+    // Live cue relay (watch → phone, sendMessage only). The watch can't mix its
+    // beeps into audio the phone owns (e.g. music streaming to AirPods), so the
+    // phone replays each cue locally where it mixes with that stream.
+    static let cueKind = "cue.kind"
+    static let cueAlert = "cue.alert"
+    /// Bool in the cue reply: whether the phone is currently playing other
+    /// audio (watch silences its own speaker while true).
+    static let cuePhoneAudio = "cue.phoneAudio"
+
     // Finished-session userInfo transfer (watch → phone). Plist-safe values only.
     static let sessionUUID = "session.uuid"
     static let sessionWorkoutId = "session.workoutId"

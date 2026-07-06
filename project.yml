@@ -44,7 +44,6 @@ targets:
       - path: IntervalTimer/Audio/Cues.swift
       - path: IntervalTimer/Audio/AlertSounds.swift
       - path: IntervalTimer/Stores/Settings.swift
-      - path: IntervalTimer/Components/ProgressRing.swift
       - path: IntervalTimer/Util/Encouragements.swift
       - path: IntervalTimer/Sync
       - path: IntervalTimer/Resources/Sounds

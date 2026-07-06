@@ -17,11 +17,18 @@ final class Cues {
     private var finish: AVAudioPlayer?
     private var alerts: [String: AVAudioPlayer] = [:]
     private var ready = false
+    private var interruptionObserver: NSObjectProtocol?
+    private var routeChangeObserver: NSObjectProtocol?
 
     // Main-thread only (written by Settings, read before hopping to `queue`).
     private var soundOn = true
     private var hapticsOn = true
     private var alertId = AlertSounds.defaultId
+
+    /// Watch-only (set from cue relay replies): true while the paired iPhone
+    /// reports it's playing audio — the relayed beep covers sound there, so
+    /// the local speaker stays quiet. Never gates haptics. Unused on iOS.
+    var phoneAudioActive = false
 
     #if !os(watchOS)
     private let lightImpact = UIImpactFeedbackGenerator(style: .light)
@@ -50,8 +57,8 @@ final class Cues {
     /// On `queue`.
     private func load() {
         guard !ready else { return }
-        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.mixWithOthers])
-        try? AVAudioSession.sharedInstance().setActive(true)
+        activateSession()
+        observeSessionChanges()
         tick = player(named: "tick")
         finish = player(named: "finish")
         for sound in AlertSounds.all {
@@ -60,12 +67,46 @@ final class Cues {
         ready = true
     }
 
+    /// On `queue`. Sets the category fresh each time so it survives whatever reset an
+    /// interruption, route change, or (on watchOS) a concurrent HKWorkoutSession causes.
+    private func activateSession() {
+        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
+    /// On `queue`. Re-asserts `.mixWithOthers` after anything external touches the shared
+    /// audio session, since nothing else in this app would otherwise notice or recover.
+    private func observeSessionChanges() {
+        guard interruptionObserver == nil else { return }
+        let center = NotificationCenter.default
+        interruptionObserver = center.addObserver(
+            forName: AVAudioSession.interruptionNotification, object: nil, queue: nil
+        ) { [weak self] note in
+            guard let typeValue = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  AVAudioSession.InterruptionType(rawValue: typeValue) == .ended else { return }
+            self?.queue.async { self?.activateSession() }
+        }
+        routeChangeObserver = center.addObserver(
+            forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            self?.queue.async { self?.activateSession() }
+        }
+    }
+
     func release() {
         queue.async {
             self.tick = nil
             self.finish = nil
             self.alerts.removeAll()
             self.ready = false
+            if let token = self.interruptionObserver {
+                NotificationCenter.default.removeObserver(token)
+                self.interruptionObserver = nil
+            }
+            if let token = self.routeChangeObserver {
+                NotificationCenter.default.removeObserver(token)
+                self.routeChangeObserver = nil
+            }
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
@@ -93,8 +134,22 @@ final class Cues {
         }
     }
 
+    /// Cue relayed from a watch-run workout (sound only — the wrist already
+    /// haptic'd). Ignores the local sound toggle: the watch checked its own.
+    func playRelayedCue(kind: String, alertId: String?) {
+        queue.async {
+            self.load()
+            switch kind {
+            case "countdown": self.replay(self.tick)
+            case "finish": self.replay(self.finish)
+            case "segment": self.replay(self.alerts[alertId ?? ""] ?? self.alerts[AlertSounds.defaultId])
+            default: break
+            }
+        }
+    }
+
     func countdown() {
-        if soundOn { queue.async { self.replay(self.tick) } }
+        if soundOn && !phoneAudioActive { queue.async { self.replay(self.tick) } }
         if hapticsOn {
             #if os(watchOS)
             WKInterfaceDevice.current().play(.click)
@@ -105,7 +160,7 @@ final class Cues {
     }
 
     func segmentChange() {
-        if soundOn {
+        if soundOn && !phoneAudioActive {
             let id = alertId
             queue.async { self.replay(self.alerts[id] ?? self.alerts[AlertSounds.defaultId]) }
         }
@@ -119,7 +174,7 @@ final class Cues {
     }
 
     func finishCue() {
-        if soundOn { queue.async { self.replay(self.finish) } }
+        if soundOn && !phoneAudioActive { queue.async { self.replay(self.finish) } }
         if hapticsOn {
             #if os(watchOS)
             WKInterfaceDevice.current().play(.success)

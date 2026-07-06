@@ -70,34 +70,36 @@ struct MonthCalendar: View {
         if let date {
             let key = CalendarMath.dayKey(date)
             let marked = markedDays.contains(key)
-            let selected = selectedDay == key
             let isToday = key == CalendarMath.dayKey(today)
+            // nil selection means "today" (matches HistoryScreen.visibleSessions).
+            let selected = selectedDay == key || (selectedDay == nil && isToday)
             let future = date > today && !isToday
             let day = Calendar.current.component(.day, from: date)
 
             Button {
                 selectedDay = selected ? nil : key
             } label: {
-                Text("\(day)")
-                    .font(.subheadline.weight(marked ? .bold : .medium))
-                    .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.4) : theme.ink.opacity(0.75)))
-                    .frame(width: 36, height: 36)
-                    .background {
-                        if selected {
-                            Circle().fill(primary.opacity(0.3))
-                                .overlay(Circle().strokeBorder(primary, lineWidth: 2))
-                        } else if marked {
-                            Circle().fill(primary.opacity(0.25))
-                        } else if isToday {
-                            Circle().strokeBorder(primary.opacity(0.6), lineWidth: 1)
+                VStack(spacing: 2) {
+                    Text("\(day)")
+                        .font(.subheadline.weight(marked ? .bold : .medium))
+                        .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.4) : theme.ink.opacity(0.75)))
+                        .frame(width: 36, height: 36)
+                        .background {
+                            if selected {
+                                Circle().fill(primary.opacity(0.3))
+                            }
+                            if isToday {
+                                Circle().strokeBorder(primary, lineWidth: 2)
+                            }
                         }
-                    }
+                    Circle().fill(primary).frame(width: 5, height: 5).opacity(marked ? 1 : 0)
+                }
             }
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
         } else {
-            Color.clear.frame(height: 36).padding(.vertical, 4)
+            Color.clear.frame(height: 43).padding(.vertical, 4)
         }
     }
 

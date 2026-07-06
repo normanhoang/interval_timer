@@ -2,8 +2,8 @@ import SwiftUI
 
 private let prerollSeconds = 3
 
-/// Condensed watch mirror of the phone RunScreen: two horizontally paged
-/// screens (controls | timer), same engine, cues, and finish behavior.
+/// Condensed watch mirror of the phone RunScreen: a single combined page with
+/// controls and timer, same engine, cues, and finish behavior.
 struct WatchRunView: View {
     let workout: WorkoutDTO
 
@@ -14,7 +14,6 @@ struct WatchRunView: View {
     @State private var encouragement = Encouragements.random()
     @State private var recorded = false
     @State private var showEndConfirm = false
-    @State private var page = 1
 
     private let segments: [Segment]
     private let totalWorkout: Int
@@ -39,10 +38,7 @@ struct WatchRunView: View {
             if done {
                 finishView
             } else {
-                TabView(selection: $page) {
-                    controlsPage.tag(0)
-                    timerPage.tag(1)
-                }
+                runningPage
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -51,9 +47,13 @@ struct WatchRunView: View {
             WorkoutSessionController.shared.start()
             attachEngineCallbacks()
             engine.start()
+            // Warm the phone-audio flag during the pre-roll so the first beep
+            // already knows which device should make it.
+            WatchSync.shared.sendCue(kind: "status", alertId: "")
         }
         .onDisappear {
             engine.stop()
+            Cues.shared.phoneAudioActive = false
             Cues.shared.release()
             WorkoutSessionController.shared.end()
         }
@@ -65,43 +65,88 @@ struct WatchRunView: View {
         }
     }
 
-    // MARK: timer page
+    // MARK: running page (combined controls + timer)
 
-    private var timerPage: some View {
+    private var runningPage: some View {
+        @Bindable var settings = settings
         let segment = engine.segment
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
-        return VStack(spacing: 6) {
+
+        return VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Button { showEndConfirm = true } label: {
+                    Text("End").font(.system(size: 13, weight: .semibold))
+                }
+                .tint(.red)
+
+                Button { settings.soundEnabled.toggle() } label: {
+                    Image(systemName: settings.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .font(.system(size: 13))
+                }
+                .tint(settings.soundEnabled ? .accentColor : .gray)
+
+                Button { paused ? engine.resume() : engine.pause() } label: {
+                    Image(systemName: paused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 13, weight: .bold))
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused || done)) { _ in
-                ring(segment)
+                barBlock(segment)
             }
+
             nextLine(next)
+
             Text("\(TimerEngineMath.formatSeconds(engine.totalRemaining)) left")
-                .font(.system(size: 12))
+                .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
-        }
-    }
 
-    private func ring(_ segment: Segment?) -> some View {
-        ProgressRing(size: 118, strokeWidth: 9, progress: engine.fractionNow(),
-                     color: Color(hex: segment?.color ?? Palette.preroll)) {
-            VStack(spacing: 0) {
-                Text(ringTopLabel(segment))
-                    .font(.system(size: 10, weight: .semibold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(.secondary)
-                Text(TimerEngineMath.formatSeconds(engine.remaining))
-                    .font(.system(size: 30, weight: .bold))
-                    .monospacedDigit()
-                Text(segment?.label ?? "")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            HStack(spacing: 14) {
+                Button { engine.skipPrev() } label: {
+                    Image(systemName: "backward.end.fill").font(.system(size: 14))
+                }
+                .accessibilityIdentifier("runPrev")
+
+                Button { engine.skipNext() } label: {
+                    Image(systemName: "forward.end.fill").font(.system(size: 14))
+                }
+                .accessibilityIdentifier("runNext")
             }
-            .frame(maxWidth: 90)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
+    }
+
+    private func barBlock(_ segment: Segment?) -> some View {
+        VStack(spacing: 2) {
+            Text(segmentTopLabel(segment))
+                .font(.system(size: 9, weight: .semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+                .frame(minHeight: 11)
+
+            HStack(spacing: 6) {
+                LinearProgressBar(progress: 1 - engine.fractionNow(),
+                                   color: Color(hex: segment?.color ?? Palette.preroll))
+                    .frame(height: 14)
+                Text(TimerEngineMath.formatSeconds(engine.remaining))
+                    .font(.system(size: 16, weight: .bold))
+                    .monospacedDigit()
+                    .fixedSize()
+            }
+
+            Text(segment?.label ?? "")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
     }
 
-    private func ringTopLabel(_ segment: Segment?) -> String {
+    private func segmentTopLabel(_ segment: Segment?) -> String {
         if paused { return "Paused" }
         if let segment, segment.round > 0 { return "Round \(segment.round)/\(segment.rounds)" }
         return " "
@@ -116,42 +161,9 @@ struct WatchRunView: View {
                 Text("Last interval")
             }
         }
-        .font(.system(size: 12, weight: .medium))
+        .font(.system(size: 11, weight: .medium))
         .foregroundStyle(.secondary)
         .lineLimit(1)
-    }
-
-    // MARK: controls page
-
-    private var controlsPage: some View {
-        @Bindable var settings = settings
-        return VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                Button { showEndConfirm = true } label: {
-                    Text("End").fontWeight(.semibold)
-                }
-                .tint(.red)
-                Button { settings.soundEnabled.toggle() } label: {
-                    Image(systemName: settings.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                }
-                .tint(settings.soundEnabled ? .accentColor : .gray)
-            }
-            Button { paused ? engine.resume() : engine.pause() } label: {
-                Image(systemName: paused ? "play.fill" : "pause.fill")
-                    .font(.system(size: 22, weight: .bold))
-            }
-            HStack(spacing: 10) {
-                Button { engine.skipPrev() } label: {
-                    Image(systemName: "backward.end.fill")
-                }
-                .accessibilityIdentifier("runPrev")
-                Button { engine.skipNext() } label: {
-                    Image(systemName: "forward.end.fill")
-                }
-                .accessibilityIdentifier("runNext")
-            }
-        }
-        .padding(.horizontal, 4)
     }
 
     // MARK: finish
@@ -179,10 +191,22 @@ struct WatchRunView: View {
     }
 
     private func attachEngineCallbacks() {
-        engine.onSegmentChange = { index, _ in if index > 0 { Cues.shared.segmentChange() } }
-        engine.onCountdownTick = { _ in Cues.shared.countdown() }
+        // Relay each cue to the phone too: when music streams phone→AirPods the
+        // watch speaker can't be heard, but the phone can mix the beep in.
+        let settings = settings
+        engine.onSegmentChange = { index, _ in
+            if index > 0 {
+                Cues.shared.segmentChange()
+                if settings.soundEnabled { WatchSync.shared.sendCue(kind: "segment", alertId: settings.alertSound) }
+            }
+        }
+        engine.onCountdownTick = { _ in
+            Cues.shared.countdown()
+            if settings.soundEnabled { WatchSync.shared.sendCue(kind: "countdown", alertId: settings.alertSound) }
+        }
         engine.onFinish = {
             Cues.shared.finishCue()
+            if settings.soundEnabled { WatchSync.shared.sendCue(kind: "finish", alertId: settings.alertSound) }
             recordSession()
         }
     }
@@ -194,7 +218,6 @@ struct WatchRunView: View {
         attachEngineCallbacks()
         recorded = false
         encouragement = Encouragements.random()
-        page = 1
         engine.start()
     }
 

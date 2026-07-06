@@ -30,6 +30,25 @@ final class WatchSync: NSObject, WCSessionDelegate {
         }
     }
 
+    /// Cue relay: the phone replays the beep into whatever it's outputting
+    /// (e.g. AirPods playing music the watch can't mix into) and replies with
+    /// whether it's playing audio at all — that flag mutes the watch speaker so
+    /// exactly one device beeps. Only worth sending live — a late cue is noise,
+    /// so no queued fallback; any failure re-enables the local speaker.
+    func sendCue(kind: String, alertId: String) {
+        let session = WCSession.default
+        guard session.activationState == .activated, session.isReachable else {
+            DispatchQueue.main.async { Cues.shared.phoneAudioActive = false }
+            return
+        }
+        session.sendMessage([SyncKeys.cueKind: kind, SyncKeys.cueAlert: alertId]) { reply in
+            let active = reply[SyncKeys.cuePhoneAudio] as? Bool ?? false
+            DispatchQueue.main.async { Cues.shared.phoneAudioActive = active }
+        } errorHandler: { _ in
+            DispatchQueue.main.async { Cues.shared.phoneAudioActive = false }
+        }
+    }
+
     // MARK: WCSessionDelegate
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
