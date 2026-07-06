@@ -22,7 +22,8 @@ struct WatchRunView: View {
         self.workout = workout
         let segs = TimerEngineMath.flattenWorkout(
             intervals: workout.intervals, repeats: workout.repeats, prerollSeconds: prerollSeconds,
-            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds,
+            warmupColor: workout.warmupColor, cooldownColor: workout.cooldownColor)
         self.segments = segs
         self.totalWorkout = TimerEngineMath.totalDuration(
             intervals: workout.intervals, repeats: workout.repeats,

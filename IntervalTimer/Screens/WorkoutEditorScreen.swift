@@ -14,9 +14,12 @@ struct WorkoutEditorScreen: View {
     @State private var intervals: [Interval]
     @State private var warmupSeconds: Int
     @State private var cooldownSeconds: Int
+    @State private var warmupColor: String
+    @State private var cooldownColor: String
     @State private var durationEditing: Interval.ID?
     @State private var colorEditing: Interval.ID?
     @State private var extraEditing: ExtraSegment?
+    @State private var extraColorEditing: ExtraSegment?
     @State private var showDeleteConfirm = false
     @State private var editMode: EditMode = .inactive
 
@@ -35,6 +38,8 @@ struct WorkoutEditorScreen: View {
             _intervals = State(initialValue: w.intervals)
             _warmupSeconds = State(initialValue: w.warmupSeconds)
             _cooldownSeconds = State(initialValue: w.cooldownSeconds)
+            _warmupColor = State(initialValue: w.warmupColor)
+            _cooldownColor = State(initialValue: w.cooldownColor)
         case .new:
             _name = State(initialValue: "")
             _repeats = State(initialValue: 4)
@@ -44,6 +49,8 @@ struct WorkoutEditorScreen: View {
             ])
             _warmupSeconds = State(initialValue: 0)
             _cooldownSeconds = State(initialValue: 0)
+            _warmupColor = State(initialValue: Palette.warmup)
+            _cooldownColor = State(initialValue: Palette.cooldown)
         }
     }
 
@@ -54,14 +61,14 @@ struct WorkoutEditorScreen: View {
             List {
                 nameRow(theme)
                 roundsRow(theme)
-                extraRow(.warmup, seconds: $warmupSeconds, theme: theme)
+                extraRow(.warmup, seconds: $warmupSeconds, color: $warmupColor, theme: theme)
                 intervalsHeader(theme)
                 ForEach($intervals) { $interval in
                     intervalRow($interval, theme: theme)
                 }
                 .onMove { intervals.move(fromOffsets: $0, toOffset: $1) }
                 addButton(theme)
-                extraRow(.cooldown, seconds: $cooldownSeconds, theme: theme)
+                extraRow(.cooldown, seconds: $cooldownSeconds, color: $cooldownColor, theme: theme)
                 footer(theme)
             }
             .listStyle(.plain)
@@ -78,6 +85,9 @@ struct WorkoutEditorScreen: View {
         }
         .sheet(item: $extraEditing) { segment in
             extraDurationSheet(segment, theme: theme)
+        }
+        .sheet(item: $extraColorEditing) { segment in
+            extraColorSheet(segment, theme: theme)
         }
         .confirmationDialog("Delete workout?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { deleteWorkout() }
@@ -191,16 +201,20 @@ struct WorkoutEditorScreen: View {
         }
     }
 
-    private func extraRow(_ segment: ExtraSegment, seconds: Binding<Int>, theme: ThemeColors) -> some View {
+    private func extraRow(_ segment: ExtraSegment, seconds: Binding<Int>, color: Binding<String>, theme: ThemeColors) -> some View {
         let enabled = Binding(
             get: { seconds.wrappedValue > 0 },
             set: { seconds.wrappedValue = $0 ? ExtraSegment.defaultSeconds : 0 }
         )
         return HStack(spacing: 10) {
-            Circle().fill(Color(hex: segment.color))
-                .frame(width: 28, height: 28)
-                .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
-                .opacity(enabled.wrappedValue ? 1 : 0.35)
+            Button { extraColorEditing = segment } label: {
+                Circle().fill(Color(hex: color.wrappedValue))
+                    .frame(width: 28, height: 28)
+                    .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
+                    .opacity(enabled.wrappedValue ? 1 : 0.35)
+            }
+            .buttonStyle(.plain)
+            .disabled(!enabled.wrappedValue)
             Text(segment.label)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(enabled.wrappedValue ? theme.ink : theme.ink.opacity(0.4))
@@ -343,6 +357,38 @@ struct WorkoutEditorScreen: View {
         .onDisappear { colorEditing = nil }
     }
 
+    private func extraColorSheet(_ segment: ExtraSegment, theme: ThemeColors) -> some View {
+        let color = segment == .warmup ? $warmupColor : $cooldownColor
+        return VStack(spacing: 16) {
+            Text("\(segment.label) color")
+                .font(.headline).foregroundStyle(theme.ink).padding(.top, 16)
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(48), spacing: 10), count: 6), spacing: 10) {
+                ForEach(Palette.intervalColors, id: \.self) { swatch in
+                    let active = color.wrappedValue == swatch
+                    Button {
+                        color.wrappedValue = swatch
+                        extraColorEditing = nil
+                    } label: {
+                        Circle().fill(Color(hex: swatch)).frame(width: 48, height: 48)
+                            .overlay(Circle().strokeBorder(active ? Color(hex: Palette.primary) : .white.opacity(0.8),
+                                                           lineWidth: active ? 3 : 2))
+                            .overlay {
+                                if active {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Palette.isLight(swatch) ? Color(hex: Palette.ink) : .white)
+                                }
+                            }
+                    }
+                    .buttonStyle(.pressableScale)
+                }
+            }
+            .padding(.bottom, 24)
+        }
+        .appBackground()
+        .presentationDetents([.height(240)])
+        .onDisappear { extraColorEditing = nil }
+    }
+
     // MARK: actions
 
     private func addInterval() {
@@ -365,10 +411,13 @@ struct WorkoutEditorScreen: View {
             existing.repeats = repeats
             existing.warmupSeconds = warmupSeconds
             existing.cooldownSeconds = cooldownSeconds
+            existing.warmupColor = warmupColor
+            existing.cooldownColor = cooldownColor
         } else {
             let order = (allWorkouts.map(\.order).max() ?? -1) + 1
             context.insert(Workout(name: finalName, intervals: intervals, repeats: repeats,
                                    warmupSeconds: warmupSeconds, cooldownSeconds: cooldownSeconds,
+                                   warmupColor: warmupColor, cooldownColor: cooldownColor,
                                    order: order))
         }
         try? context.save()
@@ -391,7 +440,6 @@ enum ExtraSegment: String, Identifiable {
 
     var id: String { rawValue }
     var label: String { self == .warmup ? "Warm up" : "Cool down" }
-    var color: String { self == .warmup ? Palette.warmup : Palette.cooldown }
 }
 
 extension View {

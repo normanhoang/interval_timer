@@ -68,6 +68,14 @@ final class TimerTests: XCTestCase {
         XCTAssertEqual(TimerEngineMath.totalOfSegments(segments), 153)
     }
 
+    func testWarmupCooldownUseCustomColors() {
+        let segments = TimerEngineMath.flattenWorkout(
+            intervals: intervals, repeats: 1, warmupSeconds: 60, cooldownSeconds: 30,
+            warmupColor: "#111111", cooldownColor: "#222222")
+        XCTAssertEqual(segments.first?.color, "#111111")
+        XCTAssertEqual(segments.last?.color, "#222222")
+    }
+
     func testZeroWarmupCooldownAddNoSegments() {
         let segments = TimerEngineMath.flattenWorkout(
             intervals: intervals, repeats: 2, warmupSeconds: 0, cooldownSeconds: 0)

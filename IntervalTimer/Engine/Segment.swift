@@ -30,7 +30,9 @@ enum TimerEngineMath {
         repeats: Int,
         prerollSeconds: Int = 0,
         warmupSeconds: Int = 0,
-        cooldownSeconds: Int = 0
+        cooldownSeconds: Int = 0,
+        warmupColor: String = Palette.warmup,
+        cooldownColor: String = Palette.cooldown
     ) -> [Segment] {
         var segments: [Segment] = []
         var t = 0
@@ -47,7 +49,7 @@ enum TimerEngineMath {
             t += seconds
         }
         if prerollSeconds > 0 { appendOnce("Get ready", prerollSeconds, Palette.preroll) }
-        if warmupSeconds > 0 { appendOnce("Warm up", warmupSeconds, Palette.warmup) }
+        if warmupSeconds > 0 { appendOnce("Warm up", warmupSeconds, warmupColor) }
         guard repeats >= 1 else { return segments }
         for round in 1...repeats {
             for (intervalIndex, interval) in intervals.enumerated() {
@@ -64,7 +66,7 @@ enum TimerEngineMath {
                 t += interval.seconds
             }
         }
-        if cooldownSeconds > 0 { appendOnce("Cool down", cooldownSeconds, Palette.cooldown) }
+        if cooldownSeconds > 0 { appendOnce("Cool down", cooldownSeconds, cooldownColor) }
         return segments
     }
 

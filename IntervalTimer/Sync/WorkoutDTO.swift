@@ -9,6 +9,8 @@ struct WorkoutDTO: Codable, Identifiable, Hashable {
     var repeats: Int
     var warmupSeconds: Int
     var cooldownSeconds: Int
+    var warmupColor: String
+    var cooldownColor: String
     var order: Int
 
     var id: UUID { uuid }
@@ -20,6 +22,8 @@ struct WorkoutDTO: Codable, Identifiable, Hashable {
         repeats = workout.repeats
         warmupSeconds = workout.warmupSeconds
         cooldownSeconds = workout.cooldownSeconds
+        warmupColor = workout.warmupColor
+        cooldownColor = workout.cooldownColor
         order = workout.order
     }
 }
