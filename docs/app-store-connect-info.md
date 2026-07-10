@@ -149,12 +149,14 @@ landscape isn't applicable to this app's supported orientations.
 |---|---|---|
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
+| `screenshots/6.5in-workouts-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/6.5in-history-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
 | `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 | `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 
 Phone shots captured on Simulator: Workouts tab (seeded workouts) and History tab defaulting
 to today's completed session, with streak/stats and the habit-tracking calendar showing
-marked days. Watch shots
+marked days; `-dark` variants are the same two screens in dark mode. Watch shots
 captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
 the single-page run screen (controls, progress bar countdown, round, next-up).
 
