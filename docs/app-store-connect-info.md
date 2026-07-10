@@ -40,7 +40,9 @@ No objectionable content, no user-generated content, no web access, no gambling.
 
 Answer **"Data Not Collected"** for every category. The app has no network access, no
 accounts, no analytics, no third-party SDKs. All data (workouts, session history) stays in
-local SwiftData storage on-device.
+local SwiftData storage on-device. The watch app's HealthKit entitlement doesn't change
+this: the workout session is used only as a keep-alive — no health data is read, written,
+or collected (see App Review notes below).
 
 ## Description
 
@@ -56,6 +58,8 @@ FEATURES
 • Build unlimited custom workouts with named, colored, timed intervals
 • Apple Watch app — start any workout from your wrist with full run controls,
   and finished workouts sync back to History on your iPhone
+• Live Activity — see the current interval, round, and countdown on the Lock
+  Screen and in the Dynamic Island while a workout runs
 • Optional warm-up and cool-down segments (with their own colors) that run once, not per round
 • Repeat any workout for 1–99 rounds, or instantly re-run it from the finish screen
 • Drag to reorder workouts and intervals
@@ -92,6 +96,9 @@ cues. 100% offline, no account needed.
   iPhone? Watch-run beeps play through it so you never miss a cue.
 - Pick a color for your warm-up and cool-down segments.
 - History now opens to today's sessions — tap any calendar day to look back.
+- Live Activity: your workout's current interval, round, and countdown now
+  show on the Lock Screen and in the Dynamic Island — and sound cues keep
+  firing on time when the app is minimized or your phone is locked.
 ```
 
 ## What's New (Version 1.3)
@@ -130,7 +137,7 @@ Initial release.
 | Sign-in required | No |
 | Demo account | Not applicable — no accounts in the app |
 | Contact email | normanhoang@gmail.com |
-| Notes for reviewer | App is fully offline and requires no login. Two sample workouts ("Tabata 20/10", "Classic HIIT 40/20") are pre-seeded on first launch so History/Workouts aren't empty. |
+| Notes for reviewer | App is fully offline and requires no login. Two sample workouts ("Tabata 20/10", "Classic HIIT 40/20") are pre-seeded on first launch so History/Workouts aren't empty. HealthKit: the Apple Watch app starts an HKWorkoutSession solely to keep the timer running while the wrist is down during a workout; no workout builder is attached and nothing is read from or written to the Health store — no health data is collected. |
 
 ## Screenshots
 

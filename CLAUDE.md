@@ -19,6 +19,10 @@ them with full controls; workouts mirror phone→watch and finished watch runs l
 phone's History via WatchConnectivity (still no network — device-to-device only). The watch
 is always dark (watchOS has no light mode); no editing on watch.
 
+A phone run shows a **Live Activity** (Lock Screen + Dynamic Island: current interval,
+round, countdown) via the `IntervalTimerWidgets` extension, and keeps cue timing alive in
+the background by looping silent audio (see Live Activity section).
+
 ## Stack
 
 - **SwiftUI** (iOS 17.0 / watchOS 10.0 deployment targets), **SwiftData** for persistence
@@ -26,10 +30,12 @@ is always dark (watchOS has no light mode); no editing on watch.
 - **Swift 5**, Xcode 26
 - No third-party packages. Project is generated from `project.yml` via **XcodeGen** — the
   `.xcodeproj` is git-ignored and regenerated, never edited by hand.
-- Two app targets: `IntervalTimer` (iOS) and `IntervalTimerWatch` (watchOS companion,
-  embedded via target dependency). The watch target compiles a subset of the phone's
+- Three targets: `IntervalTimer` (iOS), `IntervalTimerWatch` (watchOS companion, embedded
+  via target dependency), and `IntervalTimerWidgets` (WidgetKit app extension for the run
+  Live Activity, embedded appex). The watch target compiles a subset of the phone's
   sources directly (Models, Engine, Theme, Cues, Settings, Encouragements, Sync, Sounds)
-  — listed file-by-file in `project.yml`.
+  — listed file-by-file in `project.yml`; the widgets target compiles
+  `RunActivityAttributes.swift` + `Theme/Palette.swift` from the phone sources.
 
 ## Commands
 
@@ -162,6 +168,9 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   half is shared. Cue-relay hooks: `playRelayedCue` (phone side, plays a watch-run beep
   ignoring the local sound toggle) and `phoneAudioActive` (watch side — while true the
   watch speaker stays quiet because the phone is beeping; never gates haptics).
+  iOS-only `keepAwake(_:)` loops `silence.wav` while a run is active so iOS doesn't
+  suspend the app in the background — the engine keeps ticking and beeps stay on-time
+  when minimized/locked.
 - `Audio/AlertSounds.swift` — the five selectable alert sounds (filenames in
   `Resources/Sounds/`).
 
@@ -172,6 +181,20 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 - `SyncKeys.swift` — payload key constants: applicationContext (includes a `Date`
   revision because identical dictionaries aren't re-sent), finished-session transfer, and
   the live cue relay (`cue.kind`/`cue.alert` watch→phone, `cue.phoneAudio` in the reply).
+
+### Live Activity (`LiveActivity/` + `IntervalTimerWidgets/`)
+- `LiveActivity/RunActivityAttributes.swift` — `ActivityAttributes` payload (compiled into
+  both the app and the widgets extension). `ContentState` carries label/color/round plus
+  `segmentStart…segmentEnd` dates — the OS renders the ticking countdown from the date
+  range, so no per-second updates; `frozenRemaining` non-nil while paused.
+- `LiveActivity/RunLiveActivityController.swift` — singleton lifecycle wrapper
+  (`start`/`update`/`end`); `start` first ends any activity left over from a previous
+  run/process. `RunScreen` starts it on appear, updates on segment change and
+  pause/resume/skip, ends on disappear. Requires `NSSupportsLiveActivities` in the app's
+  `Info.plist`.
+- `IntervalTimerWidgets/` — the extension target: `IntervalTimerWidgetsBundle.swift`
+  (`@main`) + `RunLiveActivity.swift` (lock-screen card and Dynamic Island
+  expanded/compact/minimal presentations).
 
 ### Util & theme
 - `Util/CalendarMath.swift` — pure, unit-tested: `dayKey`, `monthMatrix` (Sunday-first,
@@ -201,7 +224,9 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   picker sheet), interval `List` (`.onMove` reorder + `.swipeActions` delete), per-row color/duration
   sheets (`.presentationDetents`; closing a 0s duration clamps to 1s), total footer,
   save/delete.
-- `RunScreen` — fullScreenCover, keep-awake (`isIdleTimerDisabled`), 3s pre-roll, ring +
+- `RunScreen` — fullScreenCover, keep-awake (`isIdleTimerDisabled` + `Cues.keepAwake`
+  background audio), Live Activity start/update/end (see Live Activity section), 3s
+  pre-roll, ring +
   round/next-up + total-progress bar + controls + header mute. On finish: confetti +
   random encouragement + Done + "Repeat workout" (rebuilds the engine and re-runs from
   the pre-roll; each completion inserts its own `Session`). Ending early records nothing.
@@ -214,7 +239,8 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   (tap = select + preview).
 
 ### Resources
-- `Resources/Sounds/` — five `alert-*.wav` + `tick.wav` + `finish.wav` (bundled, loaded by
+- `Resources/Sounds/` — five `alert-*.wav` + `tick.wav` + `finish.wav` + `silence.wav`
+  (the keep-awake loop; bundled, loaded by
   filename; also bundled into the watch app). `Resources/Assets.xcassets` — single-size
   `AppIcon` + `AccentColor` (#A78BFA).
 
