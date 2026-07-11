@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.4 |
-| Build number | 6 |
+| Version (Marketing) | 1.5 |
+| Build number | 8 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -87,7 +87,7 @@ Build any interval workout you can imagine — run it with a big countdown ring 
 cues. 100% offline, no account needed.
 ```
 
-## What's New (Version 1.4)
+## What's New (Version 1.5)
 
 ```
 - Apple Watch app: start any of your workouts from your wrist — full run
