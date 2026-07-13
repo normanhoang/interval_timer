@@ -3,6 +3,7 @@ import SwiftUI
 struct RootTabView: View {
     @State private var selection = 0
     @Environment(\.colorScheme) private var scheme
+    @Namespace private var highlightNS
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
@@ -24,6 +25,9 @@ struct RootTabView: View {
             tabButton(1, icon: "calendar", label: "History", theme)
         }
         .padding(6)
+        // Animates the matched-geometry highlight for both tap and page-swipe
+        // selection changes (swipes mutate `selection` outside withAnimation).
+        .animation(.spring(response: 0.35, dampingFraction: 0.6), value: selection)
         .glassChrome(radius: 30)
         .padding(.bottom, 6)
     }
@@ -40,8 +44,14 @@ struct RootTabView: View {
             .foregroundStyle(active ? Color(hex: Palette.primary) : theme.inkMuted)
             .frame(width: 116, height: 46)
             .background {
-                if active { Capsule().fill(theme.glassFill) }
+                if active {
+                    Capsule().fill(Color(hex: Palette.primary).opacity(0.18))
+                        .matchedGeometryEffect(id: "tabHighlight", in: highlightNS)
+                }
             }
+            // Transparent frame area isn't hit-testable by default — without
+            // this, taps land only on the icon/text glyphs.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

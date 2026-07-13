@@ -24,6 +24,11 @@ final class Workout {
     var intervals: [Interval]
     /// How many times the interval sequence repeats (rounds).
     var repeats: Int
+    /// Once-only warm up / cool down seconds; 0 = disabled.
+    var warmupSeconds: Int = 0
+    var cooldownSeconds: Int = 0
+    var warmupColor: String = Palette.warmup
+    var cooldownColor: String = Palette.cooldown
     var createdAt: Date
     /// Manual sort position for the Workouts list (SwiftData has no inherent order).
     var order: Int
@@ -33,6 +38,10 @@ final class Workout {
         name: String,
         intervals: [Interval],
         repeats: Int,
+        warmupSeconds: Int = 0,
+        cooldownSeconds: Int = 0,
+        warmupColor: String = Palette.warmup,
+        cooldownColor: String = Palette.cooldown,
         createdAt: Date = .now,
         order: Int = 0
     ) {
@@ -40,6 +49,10 @@ final class Workout {
         self.name = name
         self.intervals = intervals
         self.repeats = repeats
+        self.warmupSeconds = warmupSeconds
+        self.cooldownSeconds = cooldownSeconds
+        self.warmupColor = warmupColor
+        self.cooldownColor = cooldownColor
         self.createdAt = createdAt
         self.order = order
     }

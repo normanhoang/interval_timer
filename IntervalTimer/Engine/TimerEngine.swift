@@ -59,6 +59,7 @@ final class TimerEngine {
         ticker = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.sync()
         }
+        ticker?.tolerance = 0.02
     }
 
     private func elapsedNow() -> Double {
@@ -92,10 +93,21 @@ final class TimerEngine {
             lastWhole = whole
             if whole >= 1 && whole <= 3 { onCountdownTick?(whole) }
         }
-        index = pos.index
-        remaining = whole
+        // @Observable fires on every set regardless of equality — skip no-op writes.
+        if index != pos.index { index = pos.index }
+        if remaining != whole { remaining = whole }
         fraction = pos.remaining / Double(seg.seconds)
         totalRemaining = max(0, Double(total) - elapsed)
+    }
+
+    /// Frame-rate read for the ring: current segment fraction computed straight
+    /// from the timestamp math, independent of the 100ms ticker. Pure read — no
+    /// state writes, so it's safe to call from a TimelineView every frame.
+    func fractionNow() -> Double {
+        guard phase == .running else { return fraction }
+        let pos = TimerEngineMath.segmentAt(segments, elapsed: elapsedNow())
+        if pos.done { return 0 }
+        return pos.remaining / Double(segments[pos.index].seconds)
     }
 
     private func setElapsed(_ seconds: Double) {
@@ -108,6 +120,9 @@ final class TimerEngine {
         guard phase == .running else { return }
         pausedAt = Date()
         phase = .paused
+        // Elapsed is wall-clock based, so the ticker can stop while paused
+        // (nothing changes) and restart on resume with zero drift.
+        stop()
     }
 
     func resume() {
@@ -117,6 +132,8 @@ final class TimerEngine {
             self.pausedAt = nil
         }
         phase = .running
+        startTicker()
+        sync()
     }
 
     func skipNext() {

@@ -9,6 +9,7 @@ struct RunScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppSettings.self) private var settings
 
     @State private var engine: TimerEngine
@@ -24,9 +25,13 @@ struct RunScreen: View {
     init(workout: Workout) {
         self.workout = workout
         let segs = TimerEngineMath.flattenWorkout(
-            intervals: workout.intervals, repeats: workout.repeats, prerollSeconds: prerollSeconds)
+            intervals: workout.intervals, repeats: workout.repeats, prerollSeconds: prerollSeconds,
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds,
+            warmupColor: workout.warmupColor, cooldownColor: workout.cooldownColor)
         self.segments = segs
-        self.totalWorkout = TimerEngineMath.totalDuration(intervals: workout.intervals, repeats: workout.repeats)
+        self.totalWorkout = TimerEngineMath.totalDuration(
+            intervals: workout.intervals, repeats: workout.repeats,
+            warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
         self.totalAll = segs.isEmpty ? 0 : totalWorkout + prerollSeconds
         _engine = State(initialValue: TimerEngine(segments: segs))
     }
@@ -48,21 +53,20 @@ struct RunScreen: View {
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             Cues.shared.initialize()
-            engine.onSegmentChange = { index, _ in if index > 0 { Cues.shared.segmentChange() } }
-            engine.onCountdownTick = { _ in Cues.shared.countdown() }
-            engine.onFinish = {
-                Cues.shared.finishCue()
-                recordSession()
-            }
+            Cues.shared.keepAwake(true)
+            attachEngineCallbacks()
             engine.start()
+            startLive()
         }
         .onDisappear {
             engine.stop()
+            Cues.shared.keepAwake(false)
             Cues.shared.release()
+            RunLiveActivityController.shared.end()
             UIApplication.shared.isIdleTimerDisabled = false
         }
         .onChange(of: engine.remaining) { _, new in
-            if engine.phase == .running, new > 0, new <= 3 {
+            if !reduceMotion, engine.phase == .running, new > 0, new <= 3 {
                 pulse = 1.08
                 withAnimation(.easeOut(duration: 0.34)) { pulse = 1 }
             }
@@ -105,24 +109,30 @@ struct RunScreen: View {
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
         return VStack(spacing: 0) {
             Spacer()
-            ProgressRing(size: 320, strokeWidth: 16, progress: engine.fraction,
-                         color: Color(hex: segment?.color ?? Palette.preroll)) {
-                VStack(spacing: 6) {
-                    Text(ringTopLabel(segment))
-                        .font(.caption.weight(.semibold)).tracking(2).textCase(.uppercase)
-                        .foregroundStyle(theme.ink.opacity(0.4))
-                    Text(TimerEngineMath.formatSeconds(engine.remaining))
-                        .font(.system(size: 72, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(theme.ink)
-                        .scaleEffect(pulse)
-                    Text(segment?.label ?? "")
-                        .font(.title3.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.6))
-                }
+            TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused || done)) { _ in
+                ring(segment, theme)
             }
             nextPill(next, theme).padding(.top, 24)
             Spacer()
             progressBar(theme).padding(.bottom, 24)
             controls(theme)
+        }
+    }
+
+    private func ring(_ segment: Segment?, _ theme: ThemeColors) -> some View {
+        ProgressRing(size: 320, strokeWidth: 16, progress: engine.fractionNow(),
+                     color: Color(hex: segment?.color ?? Palette.preroll)) {
+            VStack(spacing: 6) {
+                Text(ringTopLabel(segment))
+                    .font(.caption.weight(.semibold)).tracking(2).textCase(.uppercase)
+                    .foregroundStyle(theme.ink.opacity(0.5))
+                Text(TimerEngineMath.formatSeconds(engine.remaining))
+                    .font(.system(size: 72, weight: .bold)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+                    .scaleEffect(pulse)
+                Text(segment?.label ?? "")
+                    .font(.title3.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.6))
+            }
         }
     }
 
@@ -166,20 +176,23 @@ struct RunScreen: View {
             }
             .frame(height: 10)
             Text("\(TimerEngineMath.formatSeconds(engine.totalRemaining)) left")
-                .font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.4))
+                .font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.55))
         }
     }
 
     private func controls(_ theme: ThemeColors) -> some View {
         HStack(spacing: 20) {
-            controlButton("backward.end.fill", size: 52, theme) { engine.skipPrev() }
-            Button { paused ? engine.resume() : engine.pause() } label: {
+            controlButton("backward.end.fill", size: 52, theme) { engine.skipPrev(); updateLive() }
+            Button {
+                if paused { engine.resume() } else { engine.pause() }
+                updateLive()
+            } label: {
                 Image(systemName: paused ? "play.fill" : "pause.fill")
                     .font(.system(size: 30)).foregroundStyle(theme.ink)
                     .offset(x: paused ? 2 : 0)
                     .frame(width: 80, height: 80).glassChrome(radius: 40)
             }
-            controlButton("forward.end.fill", size: 52, theme) { engine.skipNext() }
+            controlButton("forward.end.fill", size: 52, theme) { engine.skipNext(); updateLive() }
         }
         .buttonStyle(.pressableScale)
     }
@@ -212,8 +225,66 @@ struct RunScreen: View {
                     .padding(.horizontal, 48).padding(.vertical, 18).glassChrome(radius: 32)
             }
             .buttonStyle(.pressableScale).padding(.top, 48)
+            Button(action: restart) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise").font(.system(size: 15, weight: .semibold))
+                    Text("Repeat workout").fontWeight(.semibold)
+                }
+                .foregroundStyle(theme.ink.opacity(0.7))
+                .padding(.horizontal, 24).padding(.vertical, 12).glassChrome(radius: 24)
+            }
+            .buttonStyle(.pressableScale).padding(.top, 16)
             Spacer()
         }
+    }
+
+    // MARK: Live Activity
+
+    private func liveState(_ seg: Segment, remaining: Double, running: Bool) -> RunActivityAttributes.ContentState {
+        let end = Date().addingTimeInterval(remaining)
+        return RunActivityAttributes.ContentState(
+            label: seg.label, colorHex: seg.color, round: seg.round, rounds: seg.rounds,
+            segmentStart: end.addingTimeInterval(-Double(seg.seconds)), segmentEnd: end,
+            frozenRemaining: running ? nil : remaining)
+    }
+
+    private func startLive() {
+        guard let seg = segments.first else { return }
+        RunLiveActivityController.shared.start(
+            workoutName: workout.name,
+            state: liveState(seg, remaining: Double(seg.seconds), running: true))
+    }
+
+    /// Reflect the engine's current segment/phase on the Live Activity (pause/resume/skip).
+    private func updateLive() {
+        guard let seg = engine.segment else { return }
+        let remaining = engine.fractionNow() * Double(seg.seconds)
+        RunLiveActivityController.shared.update(
+            liveState(seg, remaining: remaining, running: engine.phase == .running))
+    }
+
+    private func attachEngineCallbacks() {
+        engine.onSegmentChange = { index, seg in
+            if index > 0 { Cues.shared.segmentChange() }
+            RunLiveActivityController.shared.update(liveState(seg, remaining: Double(seg.seconds), running: true))
+        }
+        engine.onCountdownTick = { _ in Cues.shared.countdown() }
+        engine.onFinish = {
+            Cues.shared.finishCue()
+            RunLiveActivityController.shared.end()
+            recordSession()
+        }
+    }
+
+    /// Run the same workout again without leaving the screen (pre-roll included).
+    private func restart() {
+        engine.stop()
+        engine = TimerEngine(segments: segments)
+        attachEngineCallbacks()
+        recorded = false
+        encouragement = Encouragements.random()
+        engine.start()
+        startLive()
     }
 
     private func recordSession() {

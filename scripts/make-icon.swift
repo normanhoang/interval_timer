@@ -20,44 +20,26 @@ func color(_ hex: String, _ a: Double = 1) -> CGColor {
         CGFloat(n & 255) / 255, CGFloat(a)])!
 }
 
-// Dark gradient wash (matches the app's dark theme: plum → indigo → navy).
+// Dark gradient wash (ink → near-black, top-left to bottom-right).
 let grad = CGGradient(colorsSpace: cs,
-    colors: [color("#241B3A"), color("#1C2038"), color("#13202E")] as CFArray,
-    locations: [0, 0.5, 1])!
+    colors: [color("#28224A"), color("#161228")] as CFArray,
+    locations: [0, 1])!
 ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: S), end: CGPoint(x: S, y: 0), options: [])
 
-let center = CGPoint(x: S / 2, y: S / 2)
-
-// Six interval segments — vivid pastels pop on the dark ground.
-let segColors = ["#F38181", "#FCE38A", "#EAFFD0", "#95E1D3", "#A8D8EA", "#C9B6E4"]
-let R = 300.0, lineWidth = 76.0, sweep = 46.0
-ctx.setLineCap(.round)
-ctx.setLineWidth(lineWidth)
-for i in 0..<6 {
-    let centerDeg = 90.0 + Double(i) * 60.0
-    let a0 = (centerDeg - sweep / 2) * .pi / 180
-    let a1 = (centerDeg + sweep / 2) * .pi / 180
-    ctx.setStrokeColor(color(segColors[i]))
-    ctx.beginPath()
-    ctx.addArc(center: center, radius: R, startAngle: a0, endAngle: a1, clockwise: false)
-    ctx.strokePath()
+// Three interval pills — the workout itself: width encodes duration
+// (long work / short rest / medium work). Coords are top-down (y flipped for CG).
+let pills: [(x: Double, topY: Double, w: Double, hex: String)] = [
+    (212, 307, 600, "#F26D6D"), // work — long
+    (212, 457, 340, "#45C583"), // rest — short
+    (212, 607, 480, "#FCD34D"), // work — medium
+]
+for p in pills {
+    let rect = CGRect(x: p.x, y: S - p.topY - 110, width: p.w, height: 110)
+    let path = CGPath(roundedRect: rect, cornerWidth: 55, cornerHeight: 55, transform: nil)
+    ctx.addPath(path)
+    ctx.setFillColor(color(p.hex))
+    ctx.fillPath()
 }
-
-// Center play triangle (accent purple), rounded corners via round-join stroke + fill.
-let purple = color("#A78BFA")
-let p1 = CGPoint(x: center.x - 84, y: center.y + 112)
-let p2 = CGPoint(x: center.x - 84, y: center.y - 112)
-let p3 = CGPoint(x: center.x + 138, y: center.y)
-ctx.setFillColor(purple)
-ctx.setStrokeColor(purple)
-ctx.setLineJoin(.round)
-ctx.setLineWidth(52)
-ctx.beginPath()
-ctx.move(to: p1)
-ctx.addLine(to: p2)
-ctx.addLine(to: p3)
-ctx.closePath()
-ctx.drawPath(using: .fillStroke)
 
 let image = ctx.makeImage()!
 let out = URL(fileURLWithPath: "IntervalTimer/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png")

@@ -8,6 +8,9 @@ struct MonthCalendar: View {
 
     @Environment(\.colorScheme) private var scheme
     @State private var visible: (year: Int, month: Int)
+    /// Cached grid for the visible month — rebuilding it every body evaluation
+    /// creates ~35 Dates via Calendar for no reason.
+    @State private var weeks: [[Date?]]
 
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     private let primary = Color(hex: Palette.primary)
@@ -16,7 +19,9 @@ struct MonthCalendar: View {
         self.markedDays = markedDays
         self._selectedDay = selectedDay
         let c = Calendar.current.dateComponents([.year, .month], from: .now)
-        _visible = State(initialValue: (c.year ?? 2026, c.month ?? 1))
+        let initial = (year: c.year ?? 2026, month: c.month ?? 1)
+        _visible = State(initialValue: initial)
+        _weeks = State(initialValue: CalendarMath.monthMatrix(year: initial.year, month: initial.month))
     }
 
     var body: some View {
@@ -24,7 +29,6 @@ struct MonthCalendar: View {
         let today = Date.now
         let nowComps = Calendar.current.dateComponents([.year, .month], from: today)
         let atCurrentMonth = visible.year == nowComps.year && visible.month == nowComps.month
-        let weeks = CalendarMath.monthMatrix(year: visible.year, month: visible.month)
 
         VStack(spacing: 0) {
             HStack {
@@ -41,7 +45,7 @@ struct MonthCalendar: View {
                 ForEach(Array(weekdays.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.ink.opacity(0.3))
+                        .foregroundStyle(theme.ink.opacity(0.45))
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -66,35 +70,36 @@ struct MonthCalendar: View {
         if let date {
             let key = CalendarMath.dayKey(date)
             let marked = markedDays.contains(key)
-            let selected = selectedDay == key
             let isToday = key == CalendarMath.dayKey(today)
+            // nil selection means "today" (matches HistoryScreen.visibleSessions).
+            let selected = selectedDay == key || (selectedDay == nil && isToday)
             let future = date > today && !isToday
             let day = Calendar.current.component(.day, from: date)
 
             Button {
-                if marked { selectedDay = selected ? nil : key }
+                selectedDay = selected ? nil : key
             } label: {
-                Text("\(day)")
-                    .font(.subheadline.weight(marked ? .bold : .medium))
-                    .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.25) : theme.ink.opacity(0.6)))
-                    .frame(width: 36, height: 36)
-                    .background {
-                        if selected {
-                            Circle().fill(primary.opacity(0.3))
-                                .overlay(Circle().strokeBorder(primary, lineWidth: 2))
-                        } else if marked {
-                            Circle().fill(primary.opacity(0.25))
-                        } else if isToday {
-                            Circle().strokeBorder(primary.opacity(0.6), lineWidth: 1)
+                VStack(spacing: 2) {
+                    Text("\(day)")
+                        .font(.subheadline.weight(marked ? .bold : .medium))
+                        .foregroundStyle(marked ? theme.ink : (future ? theme.ink.opacity(0.4) : theme.ink.opacity(0.75)))
+                        .frame(width: 36, height: 36)
+                        .background {
+                            if selected {
+                                Circle().fill(primary.opacity(0.3))
+                            }
+                            if isToday {
+                                Circle().strokeBorder(primary, lineWidth: 2)
+                            }
                         }
-                    }
+                    Circle().fill(primary).frame(width: 5, height: 5).opacity(marked ? 1 : 0)
+                }
             }
             .buttonStyle(.plain)
-            .disabled(!marked)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
         } else {
-            Color.clear.frame(height: 36).padding(.vertical, 4)
+            Color.clear.frame(height: 43).padding(.vertical, 4)
         }
     }
 
@@ -113,5 +118,6 @@ struct MonthCalendar: View {
 
     private func page(_ delta: Int) {
         visible = CalendarMath.addMonths(year: visible.year, month: visible.month, delta: delta)
+        weeks = CalendarMath.monthMatrix(year: visible.year, month: visible.month)
     }
 }

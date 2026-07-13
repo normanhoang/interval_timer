@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.0 |
-| Build number | 1 |
+| Version (Marketing) | 1.6 |
+| Build number | 9 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -40,7 +40,9 @@ No objectionable content, no user-generated content, no web access, no gambling.
 
 Answer **"Data Not Collected"** for every category. The app has no network access, no
 accounts, no analytics, no third-party SDKs. All data (workouts, session history) stays in
-local SwiftData storage on-device.
+local SwiftData storage on-device. The watch app's HealthKit entitlement doesn't change
+this: the workout session is used only as a keep-alive — no health data is read, written,
+or collected (see App Review notes below).
 
 ## Description
 
@@ -54,7 +56,12 @@ without looking at your phone.
 
 FEATURES
 • Build unlimited custom workouts with named, colored, timed intervals
-• Repeat any workout for 1–99 rounds
+• Apple Watch app — start any workout from your wrist with full run controls,
+  and finished workouts sync back to History on your iPhone
+• Live Activity — see the current interval, round, and countdown on the Lock
+  Screen and in the Dynamic Island while a workout runs
+• Optional warm-up and cool-down segments (with their own colors) that run once, not per round
+• Repeat any workout for 1–99 rounds, or instantly re-run it from the finish screen
 • Drag to reorder workouts and intervals
 • Big countdown ring with round progress and "next up" preview
 • Audio + haptic cues for interval changes and the final countdown
@@ -80,6 +87,49 @@ Build any interval workout you can imagine — run it with a big countdown ring 
 cues. 100% offline, no account needed.
 ```
 
+## What's New (Version 1.6)
+
+```
+- Minor improvements and polish under the hood.
+```
+
+## What's New (Version 1.5)
+
+```
+- Apple Watch app: start any of your workouts from your wrist — full run
+  controls (pause, skip, end, mute), haptic and sound cues, and finished
+  workouts sync back to History on your iPhone. Listening to music on your
+  iPhone? Watch-run beeps play through it so you never miss a cue.
+- Pick a color for your warm-up and cool-down segments.
+- History now opens to today's sessions — tap any calendar day to look back.
+- Live Activity: your workout's current interval, round, and countdown now
+  show on the Lock Screen and in the Dynamic Island — and sound cues keep
+  firing on time when the app is minimized or your phone is locked.
+```
+
+## What's New (Version 1.3)
+
+```
+- A brand-new app icon: your workout at a glance — colored interval bars whose
+  lengths mirror the work and rest segments you build in the app.
+```
+
+## What's New (Version 1.2)
+
+```
+- A redesigned 12-color interval picker: clearer, more distinct colors laid out
+  in rainbow order so each one is easy to tell apart.
+```
+
+## What's New (Version 1.1)
+
+```
+- Add optional warm-up and cool-down segments to any workout — they run once,
+  before round 1 and after your last round, and don't count toward your rounds.
+- Repeat a workout right from the finish screen without leaving the timer.
+- Performance and battery improvements throughout.
+```
+
 ## What's New (Version 1.0)
 
 ```
@@ -93,7 +143,7 @@ Initial release.
 | Sign-in required | No |
 | Demo account | Not applicable — no accounts in the app |
 | Contact email | normanhoang@gmail.com |
-| Notes for reviewer | App is fully offline and requires no login. Two sample workouts ("Tabata 20/10", "Classic HIIT 40/20") are pre-seeded on first launch so History/Workouts aren't empty. |
+| Notes for reviewer | App is fully offline and requires no login. Two sample workouts ("Tabata 20/10", "Classic HIIT 40/20") are pre-seeded on first launch so History/Workouts aren't empty. HealthKit: the Apple Watch app starts an HKWorkoutSession solely to keep the timer running while the wrist is down during a workout; no workout builder is attached and nothing is read from or written to the Health store — no health data is collected. |
 
 ## Screenshots
 
@@ -104,12 +154,20 @@ landscape isn't applicable to this app's supported orientations.
 | File | Size (px) | Satisfies App Store display size |
 |---|---|---|
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
+| `screenshots/6.5in-run.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
+| `screenshots/6.5in-workouts-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/6.5in-run-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/6.5in-history-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
+| `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 
-Both captured on Simulator: Workouts tab (seeded workouts) and History tab. Note the
-History shot shows the empty state ("Nothing logged yet") since no session has been run
-on that simulator — complete a workout first if you want a populated history screenshot
-instead.
+Phone shots captured on Simulator: Workouts tab (seeded workouts), run screen mid-workout
+(Tabata 20/10, round 2/8, ring countdown, next-up, total progress bar), and History tab
+defaulting to today's completed session, with streak/stats and the habit-tracking calendar
+showing marked days; `-dark` variants are the same screens in dark mode. Watch shots
+captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
+the single-page run screen (controls, progress bar countdown, round, next-up).
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
 

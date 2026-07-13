@@ -14,8 +14,8 @@ struct HistoryScreen: View {
     }
 
     private var visibleSessions: [Session] {
-        guard let selectedDay else { return sessions }
-        return sessions.filter { CalendarMath.dayKey($0.completedAt) == selectedDay }
+        let day = selectedDay ?? CalendarMath.dayKey(.now)
+        return sessions.filter { CalendarMath.dayKey($0.completedAt) == day }
     }
 
     var body: some View {
@@ -31,13 +31,13 @@ struct HistoryScreen: View {
                 List {
                     statsGrid(streak: streak, thisWeek: thisWeek, total: total, theme: theme).plainRow()
                     MonthCalendar(markedDays: markedDays, selectedDay: $selectedDay).plainRow()
-                    if let selectedDay { showAllPill(selectedDay, theme).plainRow() }
 
                     if sessions.isEmpty {
                         emptyState(theme).plainRow()
+                    } else if visibleSessions.isEmpty {
+                        selectDayHint(theme).plainRow()
                     } else {
                         sessionSections(theme)
-                        clearButton(theme).plainRow()
                     }
                 }
                 .listStyle(.plain)
@@ -48,6 +48,7 @@ struct HistoryScreen: View {
             .appBackground()
             .toolbar(.hidden, for: .navigationBar)
         }
+        .onAppear { selectedDay = nil }
         .confirmationDialog("Clear history?", isPresented: $showClearConfirm, titleVisibility: .visible) {
             Button("Clear \(clearDayName)") { clearDay() }
             Button("Clear all", role: .destructive) { clearAll() }
@@ -58,19 +59,32 @@ struct HistoryScreen: View {
     }
 
     private func header(_ theme: ThemeColors) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("INTERVAL PULSE TIMER").font(.caption.weight(.semibold)).tracking(2)
-                .foregroundStyle(theme.ink.opacity(0.4))
-            Text("History").font(.system(size: 34, weight: .bold)).foregroundStyle(theme.ink)
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("INTERVAL PULSE TIMER").font(.caption.weight(.semibold)).tracking(2)
+                    .foregroundStyle(theme.ink.opacity(0.4))
+                Text("History").font(.system(size: 34, weight: .bold)).foregroundStyle(theme.ink)
+            }
+            Spacer()
+            if !sessions.isEmpty {
+                Button { showClearConfirm = true } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17))
+                        .foregroundStyle(theme.ink)
+                        .frame(width: 44, height: 44)
+                        .glassChrome(radius: 22)
+                }
+                .buttonStyle(.pressableScale)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24).padding(.bottom, 12)
     }
 
     private func statsGrid(streak: Int, thisWeek: Int, total: Int, theme: ThemeColors) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                stat("\(streak)", "Day streak", "flame", theme)
+                stat("\(streak)", "Day streak", "flame", theme,
+                     iconTint: streak >= 2 ? Color(hex: "#FFB27A") : nil)
                 stat("\(thisWeek)", "This week", "calendar", theme)
             }
             HStack(spacing: 12) {
@@ -80,31 +94,17 @@ struct HistoryScreen: View {
         }
     }
 
-    private func stat(_ value: String, _ label: String, _ icon: String, _ theme: ThemeColors) -> some View {
+    private func stat(_ value: String, _ label: String, _ icon: String, _ theme: ThemeColors,
+                      iconTint: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top) {
                 Text(value).font(.title2.weight(.bold)).foregroundStyle(theme.ink)
                 Spacer()
-                Image(systemName: icon).font(.system(size: 14)).foregroundStyle(theme.inkMuted)
+                Image(systemName: icon).font(.system(size: 14)).foregroundStyle(iconTint ?? theme.inkMuted)
             }
-            Text(label).font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.5))
+            Text(label).font(.caption.weight(.medium)).foregroundStyle(theme.ink.opacity(0.6))
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).panel()
-    }
-
-    private func showAllPill(_ day: String, _ theme: ThemeColors) -> some View {
-        Button { selectedDay = nil } label: {
-            HStack(spacing: 6) {
-                Text("Showing \(prettyDay(day)) · Show all")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(theme.ink.opacity(0.7))
-                Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkMuted)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 8)
-            .background(Capsule().fill(theme.glassFill))
-            .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -135,7 +135,7 @@ struct HistoryScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.workoutName).font(.body.weight(.semibold)).foregroundStyle(theme.ink)
                 Text(session.completedAt.formatted(date: .omitted, time: .shortened))
-                    .font(.caption).foregroundStyle(theme.ink.opacity(0.4))
+                    .font(.caption).foregroundStyle(theme.ink.opacity(0.55))
             }
             Spacer()
             Text(TimerEngineMath.formatSeconds(session.totalSeconds))
@@ -158,12 +158,11 @@ struct HistoryScreen: View {
         .padding(32).frame(maxWidth: .infinity).panel().padding(.top, 8)
     }
 
-    private func clearButton(_ theme: ThemeColors) -> some View {
-        Button { showClearConfirm = true } label: {
-            Text("Clear history").font(.subheadline.weight(.semibold)).foregroundStyle(.pink)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain).padding(.top, 16)
+    private func selectDayHint(_ theme: ThemeColors) -> some View {
+        Text("Tap a day to see its sessions")
+            .font(.subheadline).foregroundStyle(theme.ink.opacity(0.4))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity).padding(.top, 24)
     }
 
     // MARK: helpers
@@ -173,19 +172,27 @@ struct HistoryScreen: View {
         return "today"
     }
 
+    // DateFormatter creation is expensive — build once and reuse (main-thread only).
+    private static let dayKeyFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"; return fmt
+    }()
+    private static let monthDayFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "MMMM d"; return fmt
+    }()
+    private static let weekdayFormatter: DateFormatter = {
+        let fmt = DateFormatter(); fmt.dateFormat = "EEEE, MMMM d"; return fmt
+    }()
+
     private func prettyDay(_ key: String) -> String {
-        let fmt = DateFormatter(); fmt.dateFormat = "yyyy-MM-dd"
-        guard let date = fmt.date(from: key) else { return key }
-        let out = DateFormatter(); out.dateFormat = "MMMM d"
-        return out.string(from: date)
+        guard let date = Self.dayKeyFormatter.date(from: key) else { return key }
+        return Self.monthDayFormatter.string(from: date)
     }
 
     private func dayLabel(_ date: Date) -> String {
         let cal = Calendar.current
         if cal.isDateInToday(date) { return "Today" }
         if cal.isDateInYesterday(date) { return "Yesterday" }
-        let fmt = DateFormatter(); fmt.dateFormat = "EEEE, MMMM d"
-        return fmt.string(from: date)
+        return Self.weekdayFormatter.string(from: date)
     }
 
     private func groupByDay(_ items: [Session]) -> [(label: String, items: [Session])] {
