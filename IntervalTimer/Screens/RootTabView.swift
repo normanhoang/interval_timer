@@ -37,15 +37,15 @@ struct RootTabView: View {
         return Button {
             withAnimation(.easeInOut(duration: 0.25)) { selection = index }
         } label: {
-            VStack(spacing: 2) {
-                Image(systemName: icon).font(.system(size: 20))
-                Text(label).font(.caption2.weight(.medium))
+            HStack(spacing: 8) {
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold))
+                Text(label).font(.system(size: 15, weight: .semibold))
             }
-            .foregroundStyle(active ? Color(hex: Palette.primary) : theme.inkMuted)
-            .frame(width: 116, height: 46)
+            .foregroundStyle(active ? theme.accentText : theme.inkMuted)
+            .frame(width: 132, height: 44)
             .background {
                 if active {
-                    Capsule().fill(Color(hex: Palette.primary).opacity(0.18))
+                    Capsule().fill(theme.accentTint)
                         .matchedGeometryEffect(id: "tabHighlight", in: highlightNS)
                 }
             }

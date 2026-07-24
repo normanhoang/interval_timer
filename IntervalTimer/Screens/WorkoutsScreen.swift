@@ -37,50 +37,50 @@ struct WorkoutsScreen: View {
     }
 
     private func header(_ theme: ThemeColors) -> some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("INTERVAL PULSE TIMER")
-                    .font(.caption.weight(.semibold))
-                    .tracking(2)
-                    .foregroundStyle(theme.ink.opacity(0.4))
-                Text("Workouts")
-                    .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(theme.ink)
-            }
+        HStack(alignment: .center) {
+            Text("Workouts")
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(theme.ink)
             Spacer()
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button { showSettings = true } label: {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 17))
+                        .font(.system(size: 18))
                         .foregroundStyle(theme.ink)
                         .frame(width: 44, height: 44)
                         .glassChrome(radius: 22)
                 }
+                .accessibilityIdentifier("settings")
                 Button { editorTarget = .new } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                        Text("New").fontWeight(.semibold)
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus").font(.system(size: 15, weight: .semibold))
+                        Text("New").font(.system(size: 17, weight: .semibold))
                     }
-                    .foregroundStyle(theme.ink)
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    .glassChrome(radius: 22)
+                    .foregroundStyle(theme.accentText)
+                    .padding(.horizontal, 18)
+                    .frame(height: 44)
+                    .background(Capsule().fill(theme.accentTint))
+                    .overlay(Capsule().strokeBorder(theme.accentTintBorder, lineWidth: 1))
                 }
             }
             .buttonStyle(.pressableScale)
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 14)
     }
 
     private var list: some View {
         List {
             ForEach(workouts) { workout in
-                WorkoutCard(workout: workout) { runTarget = workout }
-                    .contentShape(Rectangle())
-                    .onTapGesture { editorTarget = .edit(workout) }
+                WorkoutCard(
+                    workout: workout,
+                    onPlay: { runTarget = workout },
+                    onDuplicate: { duplicate(workout) },
+                    onEdit: { editorTarget = .edit(workout) },
+                    onDelete: { delete(workout) })
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 24, bottom: 6, trailing: 24))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
             }
             .onMove(perform: move)
         }
@@ -88,7 +88,6 @@ struct WorkoutsScreen: View {
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 0)
         .contentMargins(.bottom, 72, for: .scrollContent)
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { EditButton() } }
     }
 
     private func emptyState(_ theme: ThemeColors) -> some View {
@@ -97,19 +96,19 @@ struct WorkoutsScreen: View {
                 .font(.system(size: 26))
                 .foregroundStyle(theme.inkMuted)
                 .frame(width: 56, height: 56)
-                .background(Circle().fill(theme.glassFill))
+                .background(Circle().fill(theme.cardFill))
             Text("No workouts yet")
                 .font(.body.weight(.medium))
                 .foregroundStyle(theme.ink.opacity(0.6))
             Text("Tap “New” to build your first interval workout.")
                 .font(.subheadline)
-                .foregroundStyle(theme.ink.opacity(0.4))
+                .foregroundStyle(theme.inkLabel)
                 .multilineTextAlignment(.center)
         }
         .padding(32)
         .frame(maxWidth: .infinity)
         .panel()
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
         .padding(.top, 40)
     }
 
@@ -120,81 +119,101 @@ struct WorkoutsScreen: View {
         try? context.save()
         PhoneSync.shared.pushWorkouts()
     }
+
+    /// Overflow-menu action: copy a workout onto the end of the list.
+    private func duplicate(_ workout: Workout) {
+        let copy = Workout(
+            name: "\(workout.name) copy",
+            intervals: workout.intervals.map {
+                Interval(label: $0.label, seconds: $0.seconds, color: $0.color)
+            },
+            repeats: workout.repeats,
+            warmupSeconds: workout.warmupSeconds,
+            cooldownSeconds: workout.cooldownSeconds,
+            warmupColor: workout.warmupColor,
+            cooldownColor: workout.cooldownColor,
+            order: (workouts.map(\.order).max() ?? 0) + 1)
+        context.insert(copy)
+        try? context.save()
+        PhoneSync.shared.pushWorkouts()
+    }
+
+    private func delete(_ workout: Workout) {
+        context.delete(workout)
+        try? context.save()
+        PhoneSync.shared.pushWorkouts()
+    }
 }
 
 private struct WorkoutCard: View {
     let workout: Workout
     let onPlay: () -> Void
+    let onDuplicate: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(workout.name)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(theme.ink)
+                    Text(metaLine)
+                        .font(.system(size: 13))
+                        .foregroundStyle(theme.inkMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                Menu {
+                    Button { onDuplicate() } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+                    Button { onEdit() } label: { Label("Edit", systemImage: "pencil") }
+                    Button(role: .destructive) { onDelete() } label: { Label("Delete", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.inkMuted)
+                        .frame(width: 30, height: 44)
+                        .contentShape(Rectangle())
+                }
+                Button(action: onPlay) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(theme.onAccent)
+                        .offset(x: 1)
+                        .frame(width: 48, height: 48)
+                        .background(Circle().fill(theme.accent))
+                        .shadow(color: theme.accent.opacity(0.35), radius: 9, y: 6)
+                }
+                .buttonStyle(.pressableScale)
+                .accessibilityIdentifier("play")
+            }
+            IntervalMixBar(intervals: workout.intervals)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 18)
+        .card()
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onEdit)
+    }
+
+    /// `4:00 · 8 rounds · Work 0:20 / Rest 0:10` — or just the exercise names
+    /// once there are more than two intervals to list.
+    private var metaLine: String {
         let total = TimerEngineMath.totalDuration(
             intervals: workout.intervals, repeats: workout.repeats,
             warmupSeconds: workout.warmupSeconds, cooldownSeconds: workout.cooldownSeconds)
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(workout.name)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(theme.ink)
-                    Text("\(TimerEngineMath.formatSeconds(total)) · \(workout.repeats) \(workout.repeats == 1 ? "round" : "rounds")")
-                        .font(.subheadline)
-                        .foregroundStyle(theme.ink.opacity(0.65))
-                }
-                Spacer()
-                Button(action: onPlay) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Palette.isLight(Palette.start) ? Color(hex: Palette.ink) : .white)
-                        .offset(x: 1)
-                        .frame(width: 56, height: 56)
-                        .background(Circle().fill(Color(hex: Palette.start)))
-                }
-                .buttonStyle(.pressableScale)
-            }
-            IntervalMixBar(intervals: workout.intervals)
-            FlowChips(intervals: workout.intervals,
-                      warmupSeconds: workout.warmupSeconds,
-                      cooldownSeconds: workout.cooldownSeconds,
-                      theme: theme)
+        var parts = [TimerEngineMath.formatSeconds(total),
+                     "\(workout.repeats) \(workout.repeats == 1 ? "round" : "rounds")"]
+        let visible = workout.intervals.filter { $0.seconds > 0 }
+        if visible.count > 2 {
+            parts.append(visible.map(\.label).joined(separator: " / "))
+        } else if !visible.isEmpty {
+            parts.append(visible.map { "\($0.label) \(TimerEngineMath.formatSeconds($0.seconds))" }
+                .joined(separator: " / "))
         }
-        .padding(16)
-        .panel()
-    }
-}
-
-/// Wrapping row of interval label chips, with once-only warm up / cool down
-/// chips at the ends when enabled.
-private struct FlowChips: View {
-    let intervals: [Interval]
-    var warmupSeconds = 0
-    var cooldownSeconds = 0
-    let theme: ThemeColors
-
-    var body: some View {
-        FlexWrap(spacing: 6) {
-            if warmupSeconds > 0 {
-                chip("Warm up", seconds: warmupSeconds, color: Palette.warmup)
-            }
-            ForEach(intervals) { interval in
-                chip(interval.label, seconds: interval.seconds, color: interval.color)
-            }
-            if cooldownSeconds > 0 {
-                chip("Cool down", seconds: cooldownSeconds, color: Palette.cooldown)
-            }
-        }
-    }
-
-    private func chip(_ label: String, seconds: Int, color: String) -> some View {
-        HStack(spacing: 6) {
-            Circle().fill(Color(hex: color)).frame(width: 10, height: 10)
-            Text("\(label) \(TimerEngineMath.formatSeconds(seconds))")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(theme.ink.opacity(0.7))
-        }
-        .padding(.horizontal, 10).padding(.vertical, 4)
-        .background(Capsule().fill(theme.glassFill))
-        .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
+        return parts.joined(separator: " · ")
     }
 }
