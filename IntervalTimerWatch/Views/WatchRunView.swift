@@ -75,25 +75,29 @@ struct WatchRunView: View {
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
 
         return VStack(spacing: 0) {
-            HStack(spacing: 6) {
+            // Spread across the full width: mistaps are easy on a wrist, and the
+            // three targets sat shoulder to shoulder in the middle before.
+            HStack(spacing: 0) {
                 Button { showEndConfirm = true } label: {
-                    Text("End").font(.system(size: 12, weight: .semibold))
+                    Text("End").font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 12).frame(height: 28)
+                        .padding(.horizontal, 14).frame(height: 34)
                         .background(Capsule().fill(.black.opacity(0.25)))
                 }
+                Spacer(minLength: 6)
                 Button { settings.soundEnabled.toggle() } label: {
                     Image(systemName: settings.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 11))
+                        .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(settings.soundEnabled ? 1 : 0.5))
-                        .frame(width: 28, height: 28)
+                        .frame(width: 34, height: 34)
                         .background(Circle().fill(.black.opacity(0.25)))
                 }
+                Spacer(minLength: 6)
                 Button { togglePause() } label: {
                     Image(systemName: paused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 34, height: 34)
                         .background(Circle().fill(.black.opacity(0.25)))
                 }
             }
