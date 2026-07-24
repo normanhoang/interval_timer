@@ -40,9 +40,9 @@ final class SegmentBarTests: XCTestCase {
     }
 
     /// Flood draws every slice in the same white over the interval ground, so its
-    /// dividers are the only division there. They're a mid grey rather than near
-    /// black, so the floor is lower than it was — but a divider still has to carry
-    /// clear of the washed-out track it sits on.
+    /// dividers are the only division there. They're deliberately a light grey, so
+    /// the floor here is low — but a divider that stops being drawn reads as exactly
+    /// 1.0, and that is what this guards.
     @MainActor
     func testFloodDividersContrastAgainstTheTrack() throws {
         // 4 equal segments across 800pt, abutting → boundaries at 200/400/600.
@@ -53,8 +53,8 @@ final class SegmentBarTests: XCTestCase {
         let divider = try luminance(cg, x: 600, y: 20)
         let track = try luminance(cg, x: 500, y: 20)
         let lit = try luminance(cg, x: 250, y: 20)
-        XCTAssertGreaterThan(contrast(track, divider), 1.5,
-                             "dividers must read clearly darker than the washed-out track")
+        XCTAssertGreaterThan(contrast(track, divider), 1.15,
+                             "dividers must stay distinguishable from the washed-out track")
         XCTAssertGreaterThan(contrast(lit, track), 1.5,
                              "the lit part must still read brighter than the track")
     }
@@ -76,11 +76,11 @@ final class SegmentBarTests: XCTestCase {
         let cg = try renderFlood(segments: tabata, index: 1, elapsedFraction: 0.5,
                                  width: 353, height: 10)
 
-        XCTAssertGreaterThan(contrast(try luminance(cg, x: 2, y: 5), try luminance(cg, x: 4, y: 5)), 1.5,
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 2, y: 5), try luminance(cg, x: 4, y: 5)), 1.15,
                              "the pre-roll divider must still be drawn at phone width")
-        XCTAssertGreaterThan(contrast(try luminance(cg, x: 8, y: 5), try luminance(cg, x: 4, y: 5)), 1.5,
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 8, y: 5), try luminance(cg, x: 4, y: 5)), 1.15,
                              "…and read against the slice after it")
-        XCTAssertGreaterThan(contrast(try luminance(cg, x: 29, y: 5), try luminance(cg, x: 33, y: 5)), 1.5,
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 29, y: 5), try luminance(cg, x: 33, y: 5)), 1.15,
                              "the work/rest divider reads against the washed-out track too")
     }
 

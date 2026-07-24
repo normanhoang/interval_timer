@@ -14,7 +14,7 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
 | Version (Marketing) | 1.7 |
-| Build number | 15 |
+| Build number | 16 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
