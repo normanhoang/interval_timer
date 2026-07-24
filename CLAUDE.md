@@ -198,27 +198,33 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ### Util & theme
 - `Util/CalendarMath.swift` — pure, unit-tested: `dayKey`, `monthMatrix` (Sunday-first,
-  **1-based** month), `addMonths`, `streakLength`, `monthTitle`.
+  **1-based** month), `addMonths`, `streakLength`, `bestStreak`, `weekDays`, `monthTitle`.
 - `Util/Encouragements.swift` — 30 finish messages + `random()`.
-- `Theme/Palette.swift` — interval color hexes, `isLight`, and `Color(hex:)`.
+- `Theme/Palette.swift` — interval color hexes, `isLight`, `Color(hex:)`, the run
+  screen's flood gradients (`floodStops`/`floodDeep`, hand-tuned for work/rest and
+  derived in HSB for the rest), `darkStep` (interval color as text on light) and
+  `role(forColor:)` (the editor's "Work"/"Recovery" sub-line — the exercise name itself
+  is `Interval.label`).
 - `Theme/Theme.swift` — `ThemeSetting` (System/Light/Dark → `colorScheme`) and
   `ThemeColors` tokens per scheme (`ThemeColors.for(colorScheme)`), accessed in views via
-  `@Environment(\.colorScheme)`.
+  `@Environment(\.colorScheme)`: ink/card/accent/destructive/streak values for the
+  dark-first 1.7 design.
 
 ### Components (`Components/`)
 - `AppBackground` (gradient wash + `.appBackground()` modifier), `GlassSurface`
   (`.glassChrome()` = native `glassEffect` on iOS 26 / `.ultraThinMaterial` fallback for
-  chrome; `.panel()` = translucent fill for static content), `PressableScaleStyle`
-  (`.buttonStyle(.pressableScale)`), `ProgressRing` (trimmed circle, `progress` = fraction
-  remaining), `IntervalMixBar` (proportional color bar), `MonthCalendar`, `DurationWheel`
-  (3 wheel pickers), `Confetti` (`TimelineView`/`Canvas` particle burst), `FlexWrap`
-  (wrapping `Layout` for chips) + `EditorTarget`.
+  chrome; `.card()` = the redesign's card fill/border/shadow; `.panel()` = older
+  translucent fill), `PressableScaleStyle` (`.buttonStyle(.pressableScale)`),
+  `ProgressRing` (trimmed circle, `progress` = fraction remaining), `IntervalMixBar`
+  (proportional color bar), `SegmentBar` (one sliver per flattened run segment),
+  `WeekStrip` (History's week row + Month expander), `MonthCalendar`, `DurationWheel`
+  (3 wheel pickers), `Confetti` (`TimelineView`/`Canvas` particle burst), `EditorTarget`.
 
 ### Screens (`Screens/`)
 - `RootTabView` — `TabView`: Workouts + History.
-- `WorkoutsScreen` — header (Settings gear, New), reorderable `List` of workout cards (play
-  button → `RunScreen` fullScreenCover; card tap → editor sheet; `EditButton` toggles
-  drag-reorder).
+- `WorkoutsScreen` — header (Settings gear, accent New pill), reorderable `List` of
+  workout cards (play button → `RunScreen` fullScreenCover; card tap → editor sheet;
+  long-press drag reorders; `⋯` menu = Duplicate / Edit / Delete).
 - `WorkoutEditorScreen` — sheet; name, rounds stepper (1–99), independent warm-up /
   cool-down toggle rows (duration wheel, 60s default on enable, tappable color swatch →
   picker sheet), interval `List` (`.onMove` reorder + `.swipeActions` delete), per-row color/duration
@@ -226,17 +232,22 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   save/delete.
 - `RunScreen` — fullScreenCover, keep-awake (`isIdleTimerDisabled` + `Cues.keepAwake`
   background audio), Live Activity start/update/end (see Live Activity section), 3s
-  pre-roll, ring +
-  round/next-up + total-progress bar + controls + header mute. On finish: confetti +
-  random encouragement + Done + "Repeat workout" (rebuilds the engine and re-runs from
-  the pre-roll; each completion inserts its own `Session`). Ending early records nothing.
-- `HistoryScreen` — stat panels (streak / this-week / total workouts / total time),
-  `MonthCalendar` (any day tappable — marked days show a dot; selection filters the list),
-  session list shows one day at a time and defaults to today (reset to today every time
-  the tab appears), rows grouped Today/Yesterday/weekday with swipe-to-delete, Clear
-  history (clear day or all).
-- `SettingsScreen` — sheet: appearance pills, Sound/Haptics toggles, alert-sound list
-  (tap = select + preview).
+  pre-roll. Two styles picked by `AppSettings.runStyle`: **Flood** (default — the interval
+  color fills the screen as a cross-fading gradient, white chrome) and **Ring** (app
+  gradient + `ProgressRing`). Both show round / exercise name / next-up / `SegmentBar` /
+  controls / header mute. On finish: confetti + encouragement + summary card (duration,
+  intervals, day streak) + Done + Repeat. Each completion inserts a `Session` carrying
+  interval counts and pause count; ending early still records nothing.
+- `HistoryScreen` — streak hero (current + `CalendarMath.bestStreak`), three stat tiles
+  (durations as "24 min", never "24:00"), `WeekStrip` with a Month expander that swaps in
+  the existing `MonthCalendar` (any day tappable — selection filters the list), session
+  list shows one day at a time and defaults to today (reset every time the tab appears),
+  rows show a color spine + completion detail and push `SessionDetailScreen`;
+  swipe-to-delete, Clear history (clear day or all).
+- `SettingsScreen` — sheet: appearance pills, Sound/Haptics toggles, Run screen picker
+  (Flood / Ring), alert-sound list (tap = select + preview).
+- `SessionDetailScreen` — pushed from a History row: duration, intervals, pauses and the
+  workout's interval mix (looked up by `workoutId`; degrades if it was deleted).
 
 ### Resources
 - `Resources/Sounds/` — five `alert-*.wav` + `tick.wav` + `finish.wav` + `silence.wav`
@@ -262,9 +273,10 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   entitlement + `WKBackgroundModes: workout-processing` (in `project.yml` / `Info.plist`).
 - `Views/WorkoutsListView.swift` — workout rows (name, duration, interval color dots);
   empty state points to the iPhone.
-- `Views/WatchRunView.swift` — condensed `RunScreen` mirror on a single combined page:
-  top control row (End w/ confirm, mute, pause), `LinearProgressBar` + countdown at 30fps,
-  round, next-up, total remaining, skip± row. Same engine/cues wiring, plus each cue is
+- `Views/WatchRunView.swift` — condensed `RunScreen` mirror on a single combined page,
+  always flood (the watch has no run-style setting): interval-color gradient face, top
+  control row (End w/ confirm, mute, pause), countdown at 30fps, round, next-up,
+  `LinearProgressBar`, total remaining, skip± row. Same engine/cues wiring, plus each cue is
   relayed to the phone via `WatchSync.sendCue` (see Sync). Finish view (encouragement /
   Done / Repeat). Recording sends a `SessionDTO` instead of touching SwiftData. Back-swipe
   is disabled mid-run — End is the only exit.
@@ -272,7 +284,8 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   circular `ProgressRing` (frees vertical space for the combined run page).
 
 ## Tests (`IntervalTimerTests/`)
-`TimerTests` and `CalendarTests` cover the pure engine/calendar math (ported from the
+`TimerTests`, `CalendarTests` and `PaletteTests` cover the pure engine/calendar/color math
+(the first two ported from the
 original Jest suite). Run them after touching anything in `Engine/` or `Util/`.
 `ProgressRingTests` renders the ring via `ImageRenderer` and pixel-checks that depletion
 starts at top center (guards the round-cap overhang regression).

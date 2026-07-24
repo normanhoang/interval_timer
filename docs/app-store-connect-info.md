@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.6 |
-| Build number | 9 |
+| Version (Marketing) | 1.7 |
+| Build number | 10 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -85,6 +85,20 @@ hiit,interval timer,tabata,workout timer,fitness timer,circuit training,gym time
 ```
 Build any interval workout you can imagine — run it with a big countdown ring and haptic
 cues. 100% offline, no account needed.
+```
+
+## What's New (Version 1.7)
+
+```
+- A fresh look throughout: bolder workout cards, a redesigned editor, and
+  a History screen built around your streak and this week at a glance.
+- New run screen style — "Flood" fills the whole screen with the interval's
+  color so you can read it from across the room. Prefer the ring? Settings →
+  Run screen switches back any time.
+- Duplicate a workout from the ⋯ menu instead of rebuilding it.
+- History rows now show how a session went — intervals completed and pauses
+  — and tap one for the full detail.
+- The Lock Screen and Dynamic Island now show what's coming up next.
 ```
 
 ## What's New (Version 1.6)
