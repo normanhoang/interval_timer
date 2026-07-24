@@ -14,6 +14,7 @@ struct WatchRunView: View {
     @State private var encouragement = Encouragements.random()
     @State private var recorded = false
     @State private var showEndConfirm = false
+    @State private var pauseCount = 0
 
     private let segments: [Segment]
     private let totalWorkout: Int
@@ -33,14 +34,14 @@ struct WatchRunView: View {
 
     private var done: Bool { engine.phase == .done }
     private var paused: Bool { engine.phase == .paused }
+    private var segmentColor: String { engine.segment?.color ?? Palette.preroll }
+    /// Repeated intervals only — pre-roll, warm up and cool down aren't counted.
+    private var intervalCount: Int { segments.filter { $0.intervalIndex >= 0 }.count }
 
     var body: some View {
-        Group {
-            if done {
-                finishView
-            } else {
-                runningPage
-            }
+        ZStack {
+            if !done { floodBackground }
+            if done { finishView } else { runningPage }
         }
         .navigationBarBackButtonHidden(true)
         .onAppear {
@@ -73,83 +74,115 @@ struct WatchRunView: View {
         let segment = engine.segment
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
 
-        return VStack(spacing: 4) {
+        return VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Button { showEndConfirm = true } label: {
-                    Text("End").font(.system(size: 13, weight: .semibold))
+                    Text("End").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12).frame(height: 28)
+                        .background(Capsule().fill(.black.opacity(0.25)))
                 }
-                .tint(.red)
-
                 Button { settings.soundEnabled.toggle() } label: {
                     Image(systemName: settings.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 13))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(settings.soundEnabled ? 1 : 0.5))
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(.black.opacity(0.25)))
                 }
-                .tint(settings.soundEnabled ? .accentColor : .gray)
-
-                Button { paused ? engine.resume() : engine.pause() } label: {
+                Button { togglePause() } label: {
                     Image(systemName: paused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(.black.opacity(0.25)))
                 }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 2)
 
             TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused || done)) { _ in
-                barBlock(segment)
+                centerBlock(segment, next: next)
             }
 
-            nextLine(next)
+            Spacer(minLength: 2)
 
+            LinearProgressBar(progress: 1 - engine.fractionNow(),
+                              color: .white.opacity(0.95), track: .white.opacity(0.3))
+                .frame(height: 7)
+                .padding(.horizontal, 6)
             Text("\(TimerEngineMath.formatSeconds(engine.totalRemaining)) left")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.7))
+                .padding(.top, 4)
 
-            HStack(spacing: 14) {
-                Button { engine.skipPrev() } label: {
-                    Image(systemName: "backward.end.fill").font(.system(size: 14))
-                }
-                .accessibilityIdentifier("runPrev")
-
-                Button { engine.skipNext() } label: {
-                    Image(systemName: "forward.end.fill").font(.system(size: 14))
-                }
-                .accessibilityIdentifier("runNext")
+            HStack(spacing: 10) {
+                skipPill("backward.end.fill") { engine.skipPrev() }
+                    .accessibilityIdentifier("runPrev")
+                skipPill("forward.end.fill") { engine.skipNext() }
+                    .accessibilityIdentifier("runNext")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .padding(.top, 6)
         }
         .padding(.horizontal, 4)
-        .padding(.top, 2)
+        .padding(.top, 10)
     }
 
-    private func barBlock(_ segment: Segment?) -> some View {
-        VStack(spacing: 2) {
+    /// Interval color as the whole watch face; cross-fades on segment change.
+    private var floodBackground: some View {
+        ZStack {
+            LinearGradient(
+                stops: zip(Palette.floodStops(segmentColor), [0.0, 0.62, 1.0]).map {
+                    Gradient.Stop(color: $0, location: $1)
+                },
+                startPoint: .top, endPoint: .bottom)
+            .id(segmentColor)
+            .transition(.opacity)
+        }
+        .ignoresSafeArea()
+        .animation(.easeOut(duration: 0.3), value: segmentColor)
+    }
+
+    private func skipPill(_ icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 14))
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 38)
+                .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                    .fill(.black.opacity(0.25)))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func centerBlock(_ segment: Segment?, next: Segment?) -> some View {
+        VStack(spacing: 0) {
             Text(segmentTopLabel(segment))
-                .font(.system(size: 9, weight: .semibold))
-                .textCase(.uppercase)
-                .foregroundStyle(.secondary)
-                .frame(minHeight: 11)
-
-            HStack(spacing: 6) {
-                LinearProgressBar(progress: 1 - engine.fractionNow(),
-                                   color: Color(hex: segment?.color ?? Palette.preroll))
-                    .frame(height: 14)
-                Text(TimerEngineMath.formatSeconds(engine.remaining))
-                    .font(.system(size: 16, weight: .bold))
-                    .monospacedDigit()
-                    .fixedSize()
-            }
-
+                .font(.system(size: 11, weight: .bold)).tracking(2)
+                .foregroundStyle(.white.opacity(0.7))
+            Text(TimerEngineMath.formatSeconds(engine.remaining))
+                .font(.system(size: 62, weight: .bold))
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                .foregroundStyle(.white)
             Text(segment?.label ?? "")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
                 .lineLimit(1)
+            nextLine(next).padding(.top, 6)
+        }
+    }
+
+    private func togglePause() {
+        if paused {
+            engine.resume()
+        } else {
+            engine.pause()
+            pauseCount += 1
         }
     }
 
     private func segmentTopLabel(_ segment: Segment?) -> String {
-        if paused { return "Paused" }
-        if let segment, segment.round > 0 { return "Round \(segment.round)/\(segment.rounds)" }
+        if paused { return "PAUSED" }
+        if let segment, segment.round > 0 { return "ROUND \(segment.round)/\(segment.rounds)" }
         return " "
     }
 
@@ -162,9 +195,11 @@ struct WatchRunView: View {
                 Text("Last interval")
             }
         }
-        .font(.system(size: 11, weight: .medium))
-        .foregroundStyle(.secondary)
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(.white)
         .lineLimit(1)
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background(Capsule().fill(.black.opacity(0.25)))
     }
 
     // MARK: finish
@@ -172,22 +207,36 @@ struct WatchRunView: View {
     private var finishView: some View {
         ScrollView {
             VStack(spacing: 8) {
-                Text("🎉").font(.system(size: 36))
+                Image(systemName: "checkmark")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color(hex: Palette.rest))
+                    .frame(width: 52, height: 52)
+                    .background(Circle().fill(Color(hex: Palette.rest).opacity(0.17)))
+                    .overlay(Circle().strokeBorder(Color(hex: Palette.rest).opacity(0.55), lineWidth: 1))
                 Text(encouragement)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                     .multilineTextAlignment(.center)
-                Text("\(workout.name) · \(TimerEngineMath.formatSeconds(totalWorkout))")
-                    .font(.footnote)
+                Text("\(workout.name) · \(TimerEngineMath.formatSeconds(totalWorkout)) · \(intervalCount)/\(intervalCount)")
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
-                Button("Done") { dismiss() }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("runDone")
-                Button {
-                    restart()
-                } label: {
-                    Label("Repeat", systemImage: "arrow.counterclockwise")
+                    .multilineTextAlignment(.center)
+                Button { dismiss() } label: {
+                    Text("Done").font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color(hex: "#2A2140"))
+                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .background(Capsule().fill(Color(hex: Palette.primary)))
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("runDone")
+                Button { restart() } label: {
+                    Text("Repeat").font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 40)
+                        .background(Capsule().fill(.white.opacity(0.12)))
+                }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 4)
         }
     }
 
@@ -218,6 +267,7 @@ struct WatchRunView: View {
         engine = TimerEngine(segments: segments)
         attachEngineCallbacks()
         recorded = false
+        pauseCount = 0
         encouragement = Encouragements.random()
         engine.start()
     }
@@ -226,6 +276,7 @@ struct WatchRunView: View {
         guard !recorded else { return }
         recorded = true
         WatchSync.shared.sendSession(SessionDTO(
-            workoutId: workout.uuid, workoutName: workout.name, totalSeconds: totalWorkout))
+            workoutId: workout.uuid, workoutName: workout.name, totalSeconds: totalWorkout,
+            completedIntervals: intervalCount, totalIntervals: intervalCount, pauseCount: pauseCount))
     }
 }

@@ -91,7 +91,10 @@ final class PhoneSync: NSObject, WCSessionDelegate {
             if let existing = try? context.fetch(descriptor), !existing.isEmpty { return }
             context.insert(Session(uuid: dto.uuid, workoutId: dto.workoutId,
                                    workoutName: dto.workoutName, totalSeconds: dto.totalSeconds,
-                                   completedAt: dto.completedAt))
+                                   completedAt: dto.completedAt,
+                                   completedIntervals: dto.completedIntervals,
+                                   totalIntervals: dto.totalIntervals,
+                                   pauseCount: dto.pauseCount))
             try? context.save()
         }
     }

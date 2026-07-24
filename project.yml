@@ -94,6 +94,20 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         TEST_TARGET_NAME: IntervalTimer
 
+  # TEMPORARY (1.7 redesign) — watch screenshot harness. Remove before release.
+  IntervalTimerWatchUITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    sources:
+      - path: IntervalTimerWatchUITests
+    dependencies:
+      - target: IntervalTimerWatch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.normanhoang.intervaltimer.watchuitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: IntervalTimerWatch
+
   IntervalTimerTests:
     type: bundle.unit-test
     platform: iOS
@@ -134,3 +148,13 @@ schemes:
         IntervalTimerWatch: all
     run:
       config: Debug
+
+  # TEMPORARY (1.7 redesign) — watch screenshot harness.
+  WatchShots:
+    build:
+      targets:
+        IntervalTimerWatch: all
+        IntervalTimerWatchUITests: [test]
+    test:
+      targets:
+        - IntervalTimerWatchUITests

@@ -23,4 +23,7 @@ enum SyncKeys {
     static let sessionWorkoutName = "session.workoutName"
     static let sessionTotalSeconds = "session.totalSeconds"
     static let sessionCompletedAt = "session.completedAt"
+    static let sessionCompletedIntervals = "session.completedIntervals"
+    static let sessionTotalIntervals = "session.totalIntervals"
+    static let sessionPauseCount = "session.pauseCount"
 }
