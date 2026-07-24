@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Whole-workout progress: one sliver per flattened segment, width proportional
-/// to its duration. Past segments read full, future ones washed out, and the
-/// current one fills from its leading edge.
+/// Whole-workout progress: one pill, divided into a slice per flattened segment
+/// with the slice width proportional to its duration. Past slices read full,
+/// future ones washed out, and the current one fills from its leading edge.
+/// Only the bar's outer ends are rounded — the slices are square and abut, split
+/// by hairline seams that let the background through.
 struct SegmentBar: View {
     var segments: [Segment]
     /// Index of the running segment.
@@ -12,78 +14,42 @@ struct SegmentBar: View {
     /// Flood draws in white over the interval ground; ring draws in the segment colors.
     var flood: Bool
     var height: CGFloat = 10
-    var gap: CGFloat = 3
-
-    /// Under this a pill is too thin to read as a pill at all.
-    private let minPillWidth: CGFloat = 4
+    var seam: CGFloat = 1
 
     var body: some View {
         let total = max(1, segments.reduce(0) { $0 + $1.seconds })
         GeometryReader { geo in
-            if let spacing = spacing(in: geo.size.width, total: total) {
-                pills(width: geo.size.width, spacing: spacing, total: total)
-            } else {
-                continuousBar(width: geo.size.width, total: total)
+            let gap = seamWidth(in: geo.size.width, total: total)
+            let available = geo.size.width - gap * CGFloat(max(0, segments.count - 1))
+            HStack(spacing: gap) {
+                ForEach(Array(segments.enumerated()), id: \.offset) { i, segment in
+                    slice(track: fill(i, segment, past: false),
+                          lit: fill(i, segment, past: true),
+                          width: available * CGFloat(segment.seconds) / CGFloat(total),
+                          litFraction: doneFraction(i))
+                }
             }
+            .clipShape(Capsule())
         }
         .frame(height: height)
     }
 
-    private func pills(width: CGFloat, spacing: CGFloat, total: Int) -> some View {
-        let available = width - spacing * CGFloat(max(0, segments.count - 1))
-        return HStack(spacing: spacing) {
-            ForEach(Array(segments.enumerated()), id: \.offset) { i, segment in
-                bar(track: fill(i, segment, past: false),
-                    lit: fill(i, segment, past: true),
-                    width: available * CGFloat(segment.seconds) / CGFloat(total),
-                    litFraction: doneFraction(i))
-            }
-        }
-    }
-
-    /// A capsule track with its leading portion lit. The lit part is masked with a
-    /// *rectangle* so it keeps the track's left cap and gets a flat leading edge —
-    /// a capsule here collapses into a blob that slides right instead of filling.
-    private func bar(track: Color, lit: Color, width: CGFloat, litFraction: CGFloat) -> some View {
-        Capsule()
+    /// One square slice: washed-out track with its leading portion lit.
+    private func slice(track: Color, lit: Color, width: CGFloat, litFraction: CGFloat) -> some View {
+        Rectangle()
             .fill(track)
             .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(lit)
-                    .mask(alignment: .leading) { Rectangle().frame(width: width * litFraction) }
+                Rectangle().fill(lit).frame(width: width * litFraction)
             }
             .frame(width: width)
     }
 
-    /// One capsule for the whole run, used when there are too many segments to
-    /// draw as pills. Tinted by the segment currently running.
-    private func continuousBar(width: CGFloat, total: Int) -> some View {
-        let current = segments.indices.contains(index) ? segments[index] : segments.last
-        let color = flood ? Color.white : Color(hex: current?.color ?? Palette.preroll)
-        return bar(track: color.opacity(flood ? 0.35 : 0.3),
-                   lit: color.opacity(flood ? 0.95 : 1),
-                   width: width, litFraction: overallFraction(total: total))
-    }
-
-    /// The gap that keeps the narrowest pill legible, or nil when even a hairline
-    /// gap can't — then the bar degrades to `continuousBar`.
-    private func spacing(in width: CGFloat, total: Int) -> CGFloat? {
-        guard let shortest = segments.map(\.seconds).min(), width > 0 else { return nil }
-        func narrowest(_ gap: CGFloat) -> CGFloat {
-            let available = width - gap * CGFloat(max(0, segments.count - 1))
-            return available * CGFloat(shortest) / CGFloat(total)
-        }
-        if narrowest(gap) >= height { return gap }
-        if narrowest(1) >= minPillWidth { return 1 }
-        return nil
-    }
-
-    /// Elapsed share of the whole run (0–1).
-    private func overallFraction(total: Int) -> CGFloat {
-        let before = segments.prefix(max(0, index)).reduce(0) { $0 + $1.seconds }
-        let current = segments.indices.contains(index) ? Double(segments[index].seconds) : 0
-        let elapsed = Double(before) + current * max(0, min(1, elapsedFraction))
-        return CGFloat(min(1, elapsed / Double(total)))
+    /// Seams are dropped once the slices get so thin that the seams would eat
+    /// them — a 50-round workout then reads as a solid bar split only by color.
+    private func seamWidth(in width: CGFloat, total: Int) -> CGFloat {
+        guard let shortest = segments.map(\.seconds).min(), width > 0 else { return 0 }
+        let available = width - seam * CGFloat(max(0, segments.count - 1))
+        return available * CGFloat(shortest) / CGFloat(total) >= 2 * seam ? seam : 0
     }
 
     private func doneFraction(_ i: Int) -> CGFloat {

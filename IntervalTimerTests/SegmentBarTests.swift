@@ -8,31 +8,46 @@ import SwiftUI
 final class SegmentBarTests: XCTestCase {
 
     @MainActor
-    func testRunningPillFillsWithAFlatTrailingEdge() throws {
-        // 4 equal segments across 800pt, gap 3 → pills 197.75 wide.
-        // Pill 1 spans x 200.75…398.5; half elapsed → lit through x ≈ 299.6.
+    func testRunningSliceFillsWithAFlatTrailingEdge() throws {
+        // 4 equal segments across 800pt, 1pt seams → slices 199.25 wide.
+        // Slice 1 spans x 200.25…399.5; half elapsed → lit through x ≈ 299.9.
         let cg = try render(segments: segments(4), index: 1, elapsedFraction: 0.5,
                             width: 800, height: 40)
 
-        XCTAssertTrue(try isLit(cg, x: 210, y: 20), "running pill should be lit at its leading edge")
+        XCTAssertTrue(try isLit(cg, x: 210, y: 20), "running slice should be lit at its leading edge")
         XCTAssertTrue(try isLit(cg, x: 296, y: 4),
                       "lit part must reach the top row just inside the trailing edge")
         XCTAssertTrue(try isLit(cg, x: 296, y: 36),
                       "lit part must reach the bottom row just inside the trailing edge")
-        XCTAssertFalse(try isLit(cg, x: 340, y: 20), "the rest of the running pill stays washed out")
-        XCTAssertTrue(try isLit(cg, x: 100, y: 20), "finished pills read full")
-        XCTAssertFalse(try isLit(cg, x: 500, y: 20), "future pills read washed out")
+        XCTAssertFalse(try isLit(cg, x: 340, y: 20), "the rest of the running slice stays washed out")
+        XCTAssertTrue(try isLit(cg, x: 100, y: 20), "finished slices read full")
+        XCTAssertFalse(try isLit(cg, x: 500, y: 20), "future slices read washed out")
     }
 
-    /// Too many segments to draw as pills: the bar degrades to one continuous
-    /// capsule at the overall elapsed fraction rather than vanishing into hairlines.
+    /// The slices are square and abut; only the bar's outer ends are rounded, so
+    /// the whole thing reads as a single pill.
     @MainActor
-    func testDenseWorkoutDegradesToOneContinuousBar() throws {
-        // 100 segments across 300pt: even a 1pt gap leaves ~2pt pills.
-        let cg = try render(segments: segments(100), index: 50, elapsedFraction: 0.5,
+    func testBarIsOnePillWithSquareSlices() throws {
+        let cg = try render(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                            width: 800, height: 40)
+
+        XCTAssertFalse(try isPainted(cg, x: 1, y: 1), "the bar's leading corner is clipped away")
+        XCTAssertTrue(try isPainted(cg, x: 1, y: 20), "the leading cap is painted at mid-height")
+        // Either side of the seam between slice 1 and slice 2, at the top row: square
+        // slices paint right up to the seam, capsule-shaped ones would not.
+        XCTAssertTrue(try isPainted(cg, x: 398, y: 1), "slice 1 is square at its trailing end")
+        XCTAssertTrue(try isPainted(cg, x: 402, y: 1), "slice 2 is square at its leading end")
+    }
+
+    /// Too many segments for hairline seams: they're dropped rather than eating
+    /// the slices, and the bar still fills.
+    @MainActor
+    func testDenseWorkoutDropsTheSeams() throws {
+        // 200 segments across 300pt — 1pt seams would leave slices half a point wide.
+        let cg = try render(segments: segments(200), index: 100, elapsedFraction: 0.5,
                             width: 300, height: 10)
 
-        XCTAssertTrue(try isLit(cg, x: 100, y: 5), "elapsed part of the continuous bar is lit")
+        XCTAssertTrue(try isLit(cg, x: 100, y: 5), "elapsed part is lit")
         XCTAssertTrue(try isLit(cg, x: 140, y: 5), "lit through ~50% of the run")
         XCTAssertFalse(try isLit(cg, x: 250, y: 5), "remaining part stays washed out")
     }
@@ -63,6 +78,11 @@ final class SegmentBarTests: XCTestCase {
     private func isLit(_ image: CGImage, x: Int, y: Int) throws -> Bool {
         let pixel = try XCTUnwrap(pixelRGBA(image, x: x, y: y))
         return pixel.r > 0.7 && pixel.g < 0.3 && pixel.b < 0.3
+    }
+
+    /// Any bar pixel, lit or washed out — the black backdrop shows through elsewhere.
+    private func isPainted(_ image: CGImage, x: Int, y: Int) throws -> Bool {
+        try XCTUnwrap(pixelRGBA(image, x: x, y: y)).r > 0.1
     }
 
     private func pixelRGBA(_ image: CGImage, x: Int, y: Int) -> (r: Double, g: Double, b: Double, a: Double)? {
