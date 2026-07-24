@@ -15,6 +15,38 @@ struct RunActivityAttributes: ActivityAttributes {
         var segmentEnd: Date
         /// While paused: seconds frozen on the clock. nil while running (uses the range).
         var frozenRemaining: Double?
+        /// Next-up line; nil on the last segment.
+        var nextLabel: String?
+        var nextColorHex: String?
+        var nextSeconds: Int?
+        /// Seconds left in the whole workout at `segmentStart`.
+        var totalRemaining: Int?
+
+        init(
+            label: String,
+            colorHex: String,
+            round: Int,
+            rounds: Int,
+            segmentStart: Date,
+            segmentEnd: Date,
+            frozenRemaining: Double? = nil,
+            nextLabel: String? = nil,
+            nextColorHex: String? = nil,
+            nextSeconds: Int? = nil,
+            totalRemaining: Int? = nil
+        ) {
+            self.label = label
+            self.colorHex = colorHex
+            self.round = round
+            self.rounds = rounds
+            self.segmentStart = segmentStart
+            self.segmentEnd = segmentEnd
+            self.frozenRemaining = frozenRemaining
+            self.nextLabel = nextLabel
+            self.nextColorHex = nextColorHex
+            self.nextSeconds = nextSeconds
+            self.totalRemaining = totalRemaining
+        }
     }
 
     var workoutName: String

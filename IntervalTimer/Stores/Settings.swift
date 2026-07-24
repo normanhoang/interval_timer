@@ -1,6 +1,13 @@
 import Foundation
 import Observation
 
+/// How the Run screen looks mid-workout. The watch always uses flood.
+enum RunStyle: String, CaseIterable, Identifiable {
+    case flood, ring
+    var id: String { rawValue }
+    var label: String { self == .flood ? "Flood" : "Ring" }
+}
+
 /// App settings persisted in UserDefaults (mirrors RN lib/SettingsContext.tsx).
 /// Pushes flags into Cues whenever they change.
 @Observable
@@ -17,6 +24,10 @@ final class AppSettings {
     var theme: ThemeSetting {
         didSet { defaults.set(theme.rawValue, forKey: Keys.theme) }
     }
+    /// Flood or Ring run screen (phone only).
+    var runStyle: RunStyle {
+        didSet { defaults.set(runStyle.rawValue, forKey: Keys.runStyle) }
+    }
 
     private let defaults = UserDefaults.standard
 
@@ -25,6 +36,7 @@ final class AppSettings {
         static let haptics = "hiit.hapticsEnabled"
         static let alert = "hiit.alertSound"
         static let theme = "hiit.theme"
+        static let runStyle = "hiit.runStyle"
     }
 
     init() {
@@ -32,6 +44,7 @@ final class AppSettings {
         hapticsEnabled = defaults.object(forKey: Keys.haptics) as? Bool ?? true
         alertSound = defaults.string(forKey: Keys.alert) ?? AlertSounds.defaultId
         theme = ThemeSetting(rawValue: defaults.string(forKey: Keys.theme) ?? "") ?? .system
+        runStyle = RunStyle(rawValue: defaults.string(forKey: Keys.runStyle) ?? "") ?? .flood
         sync()
     }
 

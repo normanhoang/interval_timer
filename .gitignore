@@ -17,3 +17,6 @@ xcuserdata/
 *.key
 *.mobileprovision
 build-device/
+
+# Design handoff bundle (local reference only)
+design_handoff_interval_timer_redesign/
