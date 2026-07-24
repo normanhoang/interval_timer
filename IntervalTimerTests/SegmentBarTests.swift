@@ -39,6 +39,33 @@ final class SegmentBarTests: XCTestCase {
         XCTAssertTrue(try isPainted(cg, x: 402, y: 1), "slice 2 is square at its leading end")
     }
 
+    /// Flood draws every slice in the same white over the interval ground, so the
+    /// seams are the only division there. Letting the ground show through gives
+    /// ~1.5:1 against the washed-out track — invisible on a phone at arm's length.
+    /// The trough behind the bar has to darken them well past that.
+    @MainActor
+    func testFloodSeamsContrastAgainstTheTrack() throws {
+        // Rendered over the flood ground the bar actually sits on, mid-gradient.
+        let ground = Color(hex: Palette.floodHexes(Palette.work)[1])
+        // 4 segments across 800pt, 2pt flood seams → slices 198.5 wide, first seam
+        // at x 198.5…200.5. Slice 1 is half elapsed, so x 340 is still track.
+        let bar = SegmentBar(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                             flood: true, height: 40)
+            .frame(width: 800, height: 40)
+            .background(ground)
+        let renderer = ImageRenderer(content: bar)
+        renderer.scale = 1
+        let cg = try XCTUnwrap(try XCTUnwrap(renderer.uiImage).cgImage)
+
+        let seam = try luminance(cg, x: 199, y: 20)
+        let track = try luminance(cg, x: 340, y: 20)
+        let lit = try luminance(cg, x: 250, y: 20)
+        XCTAssertGreaterThan(contrast(track, seam), 1.8,
+                             "seams must read clearly darker than the washed-out track")
+        XCTAssertGreaterThan(contrast(lit, track), 1.5,
+                             "the lit part must still read brighter than the track")
+    }
+
     /// Too many segments for hairline seams: they're dropped rather than eating
     /// the slices, and the bar still fills.
     @MainActor
@@ -78,6 +105,17 @@ final class SegmentBarTests: XCTestCase {
     private func isLit(_ image: CGImage, x: Int, y: Int) throws -> Bool {
         let pixel = try XCTUnwrap(pixelRGBA(image, x: x, y: y))
         return pixel.r > 0.7 && pixel.g < 0.3 && pixel.b < 0.3
+    }
+
+    private func luminance(_ image: CGImage, x: Int, y: Int) throws -> Double {
+        let p = try XCTUnwrap(pixelRGBA(image, x: x, y: y))
+        return 0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b
+    }
+
+    /// WCAG's ratio shape on plain (un-linearized) luminance — enough to compare
+    /// two tones of the same bar against each other.
+    private func contrast(_ a: Double, _ b: Double) -> Double {
+        (max(a, b) + 0.05) / (min(a, b) + 0.05)
     }
 
     /// Any bar pixel, lit or washed out — the black backdrop shows through elsewhere.

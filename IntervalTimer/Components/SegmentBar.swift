@@ -4,7 +4,7 @@ import SwiftUI
 /// with the slice width proportional to its duration. Past slices read full,
 /// future ones washed out, and the current one fills from its leading edge.
 /// Only the bar's outer ends are rounded — the slices are square and abut, split
-/// by hairline seams that let the background through.
+/// by seams showing the trough beneath.
 struct SegmentBar: View {
     var segments: [Segment]
     /// Index of the running segment.
@@ -14,7 +14,11 @@ struct SegmentBar: View {
     /// Flood draws in white over the interval ground; ring draws in the segment colors.
     var flood: Bool
     var height: CGFloat = 10
-    var seam: CGFloat = 1
+
+    /// Flood's slices are all one colour, so its seams have to carry the division on
+    /// their own: they need the extra width and the darkened trough to read on a
+    /// bright ground. Ring's seams fall between differently coloured slices already.
+    private var seam: CGFloat { flood ? 2 : 1 }
 
     var body: some View {
         let total = max(1, segments.reduce(0) { $0 + $1.seconds })
@@ -29,6 +33,7 @@ struct SegmentBar: View {
                           litFraction: doneFraction(i))
                 }
             }
+            .background(flood ? Color.black.opacity(0.45) : .clear)
             .clipShape(Capsule())
         }
         .frame(height: height)
