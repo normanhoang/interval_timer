@@ -168,20 +168,22 @@ landscape isn't applicable to this app's supported orientations.
 | File | Size (px) | Satisfies App Store display size |
 |---|---|---|
 | `screenshots/6.5in-workouts.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
-| `screenshots/6.5in-run.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
+| `screenshots/6.5in-run-ring.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-history.png` | 1242 × 2688 | 6.5" (iPhone 11 Pro Max class) |
 | `screenshots/6.5in-workouts-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
-| `screenshots/6.5in-run-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/6.5in-run-ring-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
+| `screenshots/6.5in-run-flood.png` | 1242 × 2688 | 6.5" (Flood run style, dark mode) |
 | `screenshots/6.5in-history-dark.png` | 1242 × 2688 | 6.5" (dark mode variant) |
 | `screenshots/watch/46mm-workouts.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 | `screenshots/watch/46mm-run.png` | 416 × 496 | Apple Watch Series 11 (single bucket covers all Watch sizes) |
 
-Phone shots captured on Simulator: Workouts tab (seeded workouts), run screen mid-workout
-(Tabata 20/10, round 2/8, ring countdown, next-up, total progress bar), and History tab
-defaulting to today's completed session, with streak/stats and the habit-tracking calendar
-showing marked days; `-dark` variants are the same screens in dark mode. Watch shots
-captured on the Series 11 46mm simulator (synced workouts from phone): the Workouts list and
-the single-page run screen (controls, progress bar countdown, round, next-up).
+Phone shots captured on Simulator: Workouts tab (seeded workouts), the run screen mid-interval
+(Tabata 20/10, round 1/8, next-up, segment progress bar) in both run styles — Ring in light and
+dark, Flood once because it floods the interval color either way — and History tab defaulting to
+today's completed session, with the streak hero, stats and the week strip; `-dark` variants are
+the same screens in dark mode. Watch shots captured on the Series 11 46mm simulator (synced
+workouts from phone): the Workouts list and the single-page run screen (controls, progress bar
+countdown, round, next-up).
 
 ## Contact / Support Info (App Store Connect → App Information → General App Information)
 
