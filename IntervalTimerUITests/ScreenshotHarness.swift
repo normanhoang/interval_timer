@@ -87,6 +87,22 @@ final class ScreenshotHarness: XCTestCase {
         snap(app, "run-ring-light")
     }
 
+    /// Start a run, then go home so the Dynamic Island shows the Live Activity.
+    func testLiveActivityIsland() {
+        let app = launch(theme: "dark", runStyle: "flood")
+        XCTAssertTrue(app.staticTexts["Workouts"].waitForExistence(timeout: 10))
+        tapCenter(app.buttons.matching(identifier: "play").firstMatch)
+        Thread.sleep(forTimeInterval: 4)
+        XCUIDevice.shared.press(.home)
+        Thread.sleep(forTimeInterval: 2)
+        snap(app, "live-activity-island")
+        // Long-press the island to expand it.
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.028))
+            .press(forDuration: 1.2)
+        snap(app, "live-activity-expanded")
+    }
+
     /// Skip through every interval to reach the finish screen.
     func testFinishDark() {
         let app = launch(theme: "dark", runStyle: "flood")
