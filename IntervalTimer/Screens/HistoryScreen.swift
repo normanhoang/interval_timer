@@ -30,7 +30,6 @@ struct HistoryScreen: View {
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
-        let total = sessions.reduce(0) { $0 + $1.totalSeconds }
         let weekAgo = Date.now.addingTimeInterval(-7 * 24 * 60 * 60)
         let thisWeek = sessions.filter { $0.completedAt >= weekAgo }.count
         let streak = CalendarMath.streakLength(markedDays)
@@ -40,7 +39,7 @@ struct HistoryScreen: View {
                 header(theme)
                 List {
                     streakHero(streak: streak, theme: theme).plainRow()
-                    statsRow(thisWeek: thisWeek, total: total, theme: theme).plainRow()
+                    statsRow(thisWeek: thisWeek, theme: theme).plainRow()
                     calendarCard(theme).plainRow()
 
                     if sessions.isEmpty {
@@ -112,11 +111,10 @@ struct HistoryScreen: View {
             .strokeBorder(theme.streakBorder, lineWidth: 1))
     }
 
-    private func statsRow(thisWeek: Int, total: Int, theme: ThemeColors) -> some View {
+    private func statsRow(thisWeek: Int, theme: ThemeColors) -> some View {
         HStack(spacing: 10) {
             stat("\(thisWeek)", "this week", theme)
             stat("\(sessions.count)", "workouts", theme)
-            stat(minutesLabel(total), "total time", theme)
         }
     }
 
@@ -137,14 +135,6 @@ struct HistoryScreen: View {
             }
         }
         .padding(16).card()
-    }
-
-    /// Durations in History read as "24 min", never "24:00".
-    private func minutesLabel(_ seconds: Int) -> String {
-        let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes) min" }
-        let h = minutes / 60, m = minutes % 60
-        return m == 0 ? "\(h) h" : "\(h) h \(m) min"
     }
 
     @ViewBuilder
