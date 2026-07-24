@@ -75,16 +75,18 @@ struct WatchRunView: View {
         let next = segments.indices.contains(engine.index + 1) ? segments[engine.index + 1] : nil
 
         return VStack(spacing: 0) {
-            // Spread across the full width: mistaps are easy on a wrist, and the
-            // three targets sat shoulder to shoulder in the middle before.
+            // Four equal spacers: the free width splits into two margins and two
+            // gaps, so the trio stays centred and the gaps are half what pushing
+            // the buttons to the edges gave — spread enough to be hard to mistap.
             HStack(spacing: 0) {
+                Spacer(minLength: 3)
                 Button { showEndConfirm = true } label: {
                     Text("End").font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14).frame(height: 34)
                         .background(Capsule().fill(.black.opacity(0.25)))
                 }
-                Spacer(minLength: 6)
+                Spacer(minLength: 3)
                 Button { settings.soundEnabled.toggle() } label: {
                     Image(systemName: settings.soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
                         .font(.system(size: 13))
@@ -92,7 +94,7 @@ struct WatchRunView: View {
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(.black.opacity(0.25)))
                 }
-                Spacer(minLength: 6)
+                Spacer(minLength: 3)
                 Button { togglePause() } label: {
                     Image(systemName: paused ? "play.fill" : "pause.fill")
                         .font(.system(size: 13, weight: .bold))
@@ -100,6 +102,7 @@ struct WatchRunView: View {
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(.black.opacity(0.25)))
                 }
+                Spacer(minLength: 3)
             }
             .buttonStyle(.plain)
 
