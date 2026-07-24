@@ -39,31 +39,48 @@ final class SegmentBarTests: XCTestCase {
         XCTAssertTrue(try isPainted(cg, x: 402, y: 1), "slice 2 is square at its leading end")
     }
 
-    /// Flood draws every slice in the same white over the interval ground, so the
-    /// seams are the only division there. Letting the ground show through gives
+    /// Flood draws every slice in the same white over the interval ground, so its
+    /// dividers are the only division there. Letting the ground show through gave
     /// ~1.5:1 against the washed-out track — invisible on a phone at arm's length.
-    /// The trough behind the bar has to darken them well past that.
     @MainActor
-    func testFloodSeamsContrastAgainstTheTrack() throws {
-        // Rendered over the flood ground the bar actually sits on, mid-gradient.
-        let ground = Color(hex: Palette.floodHexes(Palette.work)[1])
-        // 4 segments across 800pt, 2pt flood seams → slices 198.5 wide, first seam
-        // at x 198.5…200.5. Slice 1 is half elapsed, so x 340 is still track.
-        let bar = SegmentBar(segments: segments(4), index: 1, elapsedFraction: 0.5,
-                             flood: true, height: 40)
-            .frame(width: 800, height: 40)
-            .background(ground)
-        let renderer = ImageRenderer(content: bar)
-        renderer.scale = 1
-        let cg = try XCTUnwrap(try XCTUnwrap(renderer.uiImage).cgImage)
+    func testFloodDividersContrastAgainstTheTrack() throws {
+        // 4 equal segments across 800pt, abutting → boundaries at 200/400/600.
+        // Slice 1 is half elapsed, so the 600 divider and x 500 are both washed out.
+        let cg = try renderFlood(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                                 width: 800, height: 40)
 
-        let seam = try luminance(cg, x: 199, y: 20)
-        let track = try luminance(cg, x: 340, y: 20)
+        let divider = try luminance(cg, x: 600, y: 20)
+        let track = try luminance(cg, x: 500, y: 20)
         let lit = try luminance(cg, x: 250, y: 20)
-        XCTAssertGreaterThan(contrast(track, seam), 1.8,
-                             "seams must read clearly darker than the washed-out track")
+        XCTAssertGreaterThan(contrast(track, divider), 1.8,
+                             "dividers must read clearly darker than the washed-out track")
         XCTAssertGreaterThan(contrast(lit, track), 1.5,
                              "the lit part must still read brighter than the track")
+    }
+
+    /// Regression: dividers used to cost slice width, and were dropped whenever the
+    /// narrowest slice fell under 4pt. Tabata's 3s pre-roll measures 3.96pt on an
+    /// iPhone 15's 353pt bar and 4.22pt on the 414pt device the shots were taken on
+    /// — so Flood lost its divisions on the phone and kept them everywhere we looked.
+    @MainActor
+    func testFloodDividersSurviveAPhoneWidthBar() throws {
+        let tabata = TimerEngineMath.flattenWorkout(
+            intervals: [Interval(label: "Work", seconds: 20, color: Palette.work),
+                        Interval(label: "Rest", seconds: 10, color: Palette.rest)],
+            repeats: 8, prerollSeconds: 3)
+        // 353pt bar, 243s total → pre-roll slice 4.36pt (divider x 3.4…5.4), work
+        // slice 29.05 (divider x 32.4…34.4). A divider is measured against the slices
+        // either side of it, since those differ: elapsed slices are white, later ones
+        // washed out.
+        let cg = try renderFlood(segments: tabata, index: 1, elapsedFraction: 0.5,
+                                 width: 353, height: 10)
+
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 2, y: 5), try luminance(cg, x: 4, y: 5)), 1.8,
+                             "the pre-roll divider must still be drawn at phone width")
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 8, y: 5), try luminance(cg, x: 4, y: 5)), 1.8,
+                             "…and read against the slice after it")
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 29, y: 5), try luminance(cg, x: 33, y: 5)), 1.8,
+                             "the work/rest divider reads against the washed-out track too")
     }
 
     /// Too many segments for hairline seams: they're dropped rather than eating
@@ -86,6 +103,19 @@ final class SegmentBarTests: XCTestCase {
             Segment(label: "S\(i)", seconds: seconds, color: "#FF0000",
                     round: 1, rounds: 1, intervalIndex: i, startsAt: i * seconds)
         }
+    }
+
+    /// Flood over the ground the bar actually sits on, mid-gradient.
+    @MainActor
+    private func renderFlood(segments: [Segment], index: Int, elapsedFraction: Double,
+                             width: CGFloat, height: CGFloat) throws -> CGImage {
+        let bar = SegmentBar(segments: segments, index: index,
+                             elapsedFraction: elapsedFraction, flood: true, height: height)
+            .frame(width: width, height: height)
+            .background(Color(hex: Palette.floodHexes(Palette.work)[1]))
+        let renderer = ImageRenderer(content: bar)
+        renderer.scale = 1
+        return try XCTUnwrap(try XCTUnwrap(renderer.uiImage).cgImage)
     }
 
     @MainActor
