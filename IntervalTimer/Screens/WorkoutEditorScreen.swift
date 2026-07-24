@@ -167,13 +167,8 @@ struct WorkoutEditorScreen: View {
                     .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
             }
             .buttonStyle(.plain)
-            VStack(alignment: .leading, spacing: 1) {
-                TextField("Label", text: interval.label)
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.ink)
-                if let role = Palette.role(forColor: interval.wrappedValue.color) {
-                    Text(role).font(.system(size: 12)).foregroundStyle(theme.inkLabel)
-                }
-            }
+            TextField("Label", text: interval.label)
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.ink)
             Spacer(minLength: 4)
             Button { durationEditing = interval.wrappedValue.id } label: {
                 Text(TimerEngineMath.formatSeconds(interval.wrappedValue.seconds))

@@ -36,12 +36,4 @@ final class PaletteTests: XCTestCase {
     func testShadeIsIdentityAtUnitScale() {
         XCTAssertEqual(Palette.shade("#5FB8E0", brightness: 1, saturation: 1), "#5FB8E0")
     }
-
-    // MARK: interval role
-
-    func testRoleDerivedFromColor() {
-        XCTAssertEqual(Palette.role(forColor: Palette.work), "Work")
-        XCTAssertEqual(Palette.role(forColor: Palette.rest), "Recovery")
-        XCTAssertNil(Palette.role(forColor: "#B87BDC"))
-    }
 }

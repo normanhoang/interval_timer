@@ -26,17 +26,6 @@ enum Palette {
     static let primary = "#A78BFA"
     static let start = "#5FC98A" // "Go" mint — Start/play button, tuned to the interval palette
 
-    /// Role sub-label under an interval's name in the editor — derived from its
-    /// color, since the name itself is the exercise ("Plank"). nil for the rest
-    /// of the palette, where no role can be inferred.
-    static func role(forColor hex: String) -> String? {
-        switch hex.uppercased() {
-        case work.uppercased(): return "Work"
-        case rest.uppercased(): return "Recovery"
-        default: return nil
-        }
-    }
-
     /// Darker step of an interval color, for text on a light background
     /// (work #F38181 → #E05B5B). Pastels alone don't carry enough contrast.
     static func darkStep(_ hex: String) -> Color {
