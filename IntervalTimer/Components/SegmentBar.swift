@@ -58,7 +58,7 @@ struct SegmentBar: View {
             if median >= 2 * dividerWidth {
                 ForEach(Array(widths.dropLast().indices), id: \.self) { i in
                     Rectangle()
-                        .fill(.black.opacity(0.6))
+                        .fill(Color(white: 0.35))
                         .frame(width: dividerWidth)
                         .offset(x: widths[0...i].reduce(0, +) - dividerWidth / 2)
                 }

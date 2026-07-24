@@ -159,14 +159,6 @@ struct RunScreen: View {
                     .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(.white)
                     .padding(.top, 4)
-                if let state = stateLabel(segment) {
-                    Text(state)
-                        .font(.system(size: 13, weight: .bold)).tracking(2)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16).padding(.vertical, 7)
-                        .background(Capsule().fill(.white.opacity(0.18)))
-                        .padding(.top, 14)
-                }
                 nextPill(next, fill: .black.opacity(0.24), fg: .white).padding(.top, 26)
             }
             Spacer()
@@ -278,15 +270,6 @@ struct RunScreen: View {
         if paused { return "PAUSED" }
         guard let segment, segment.round > 0 else { return nil }
         return "ROUND \(segment.round) / \(segment.rounds)"
-    }
-
-    /// WORK / REST chip — only for the two colors that carry a role.
-    private func stateLabel(_ segment: Segment?) -> String? {
-        switch Palette.role(forColor: segment?.color ?? "") {
-        case "Work": return "WORK"
-        case "Recovery": return "REST"
-        default: return nil
-        }
     }
 
     private func nextPill(_ next: Segment?, fill: Color, fg: Color) -> some View {
