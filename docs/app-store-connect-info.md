@@ -28,7 +28,7 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 
 **Setup needed:** GitHub Pages isn't live yet. In the repo: Settings → Pages → Source: Deploy
 from branch → `main` / folder `/docs`. Pages only serves from `main` (or `gh-pages`), so
-merge this branch into `main` before enabling, or point Pages at `swift-rewrite` if you'd
+merge this branch into `main` before enabling, or point Pages at `redesign` if you'd
 rather not merge yet.
 
 ## Age Rating
@@ -62,11 +62,15 @@ FEATURES
   Screen and in the Dynamic Island while a workout runs
 • Optional warm-up and cool-down segments (with their own colors) that run once, not per round
 • Repeat any workout for 1–99 rounds, or instantly re-run it from the finish screen
+• Duplicate a workout to build a variation without starting over
 • Drag to reorder workouts and intervals
-• Big countdown ring with round progress and "next up" preview
+• Two run screen styles — "Flood" fills the screen with the interval's color, or
+  keep the classic countdown ring
+• Round progress, "next up" preview, and a segment bar for the whole workout
 • Audio + haptic cues for interval changes and the final countdown
 • Screen stays awake during a workout
-• History tab with streaks, weekly totals, and a habit-tracking calendar
+• History tab with streaks, weekly totals, a habit-tracking calendar, and
+  per-session detail (intervals completed, pauses, interval mix)
 • Light, Dark, and System appearance
 • 100% offline — no account, no ads, no tracking. All data stays on your device.
 
@@ -95,6 +99,10 @@ cues. 100% offline, no account needed.
 - New run screen style — "Flood" fills the whole screen with the interval's
   color so you can read it from across the room. Prefer the ring? Settings →
   Run screen switches back any time.
+- The Apple Watch run screen matches: one page, interval-color background,
+  bigger End / mute / pause controls.
+- The workout's segments now read as a single progress bar, so you can see
+  where you are in the whole session at a glance.
 - Duplicate a workout from the ⋯ menu instead of rebuilding it.
 - History rows now show how a session went — intervals completed and pauses
   — and tap one for the full detail.
