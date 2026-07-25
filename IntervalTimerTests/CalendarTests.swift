@@ -77,6 +77,35 @@ final class CalendarTests: XCTestCase {
         XCTAssertEqual(CalendarMath.streakLength(days, today: date(2026, 6, 1)), 3)
     }
 
+    // MARK: bestStreak
+
+    func testBestStreakFindsLongestRunAnywhere() {
+        let days: Set = ["2026-05-01", "2026-05-02", "2026-05-03",
+                         "2026-06-10", "2026-06-11"]
+        XCTAssertEqual(CalendarMath.bestStreak(days), 3)
+    }
+
+    func testBestStreakCrossesMonthBoundary() {
+        let days: Set = ["2026-05-30", "2026-05-31", "2026-06-01", "2026-06-02"]
+        XCTAssertEqual(CalendarMath.bestStreak(days), 4)
+    }
+
+    func testBestStreakEdgeCases() {
+        XCTAssertEqual(CalendarMath.bestStreak([]), 0)
+        XCTAssertEqual(CalendarMath.bestStreak(["2026-06-12"]), 1)
+        XCTAssertEqual(CalendarMath.bestStreak(["2026-06-12", "2026-06-14"]), 1)
+    }
+
+    // MARK: weekDays
+
+    func testWeekDaysAreSundayFirstSeven() {
+        let week = CalendarMath.weekDays(containing: date(2026, 6, 12)) // Friday
+        XCTAssertEqual(week.count, 7)
+        XCTAssertEqual(Calendar.current.component(.weekday, from: week[0]), 1)
+        XCTAssertEqual(CalendarMath.dayKey(week[0]), "2026-06-07")
+        XCTAssertEqual(CalendarMath.dayKey(week[6]), "2026-06-13")
+    }
+
     // MARK: addMonths (1-based month)
 
     func testAddMonthsWraps() {

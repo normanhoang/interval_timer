@@ -21,7 +21,6 @@ struct WorkoutEditorScreen: View {
     @State private var extraEditing: ExtraSegment?
     @State private var extraColorEditing: ExtraSegment?
     @State private var showDeleteConfirm = false
-    @State private var editMode: EditMode = .inactive
 
     private var existing: Workout? {
         if case .edit(let w) = target { return w }
@@ -61,20 +60,18 @@ struct WorkoutEditorScreen: View {
             List {
                 nameRow(theme)
                 roundsRow(theme)
-                extraRow(.warmup, seconds: $warmupSeconds, color: $warmupColor, theme: theme)
+                extrasCard(theme)
                 intervalsHeader(theme)
                 ForEach($intervals) { $interval in
                     intervalRow($interval, theme: theme)
                 }
                 .onMove { intervals.move(fromOffsets: $0, toOffset: $1) }
                 addButton(theme)
-                extraRow(.cooldown, seconds: $cooldownSeconds, color: $cooldownColor, theme: theme)
                 footer(theme)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.defaultMinListRowHeight, 0)
-            .environment(\.editMode, $editMode)
         }
         .appBackground()
         .sheet(item: durationBinding) { interval in
@@ -102,16 +99,17 @@ struct WorkoutEditorScreen: View {
     private func header(_ theme: ThemeColors) -> some View {
         ZStack {
             Text(isNew ? "New Workout" : "Edit Workout")
-                .font(.headline).foregroundStyle(theme.ink)
+                .font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 18))
+                    Image(systemName: "xmark").font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(theme.ink).frame(width: 40, height: 40).glassChrome(radius: 20)
                 }
                 Spacer()
                 Button { save() } label: {
-                    Text("Save").fontWeight(.semibold).foregroundStyle(theme.ink)
-                        .padding(.horizontal, 16).padding(.vertical, 9).glassChrome(radius: 20)
+                    Text("Save").font(.system(size: 16, weight: .bold)).foregroundStyle(theme.onAccent)
+                        .padding(.horizontal, 22).frame(height: 40)
+                        .background(Capsule().fill(theme.accent))
                 }
             }
             .buttonStyle(.pressableScale)
@@ -122,77 +120,71 @@ struct WorkoutEditorScreen: View {
     // MARK: rows
 
     private func intervalsHeader(_ theme: ThemeColors) -> some View {
-        let editing = editMode == .active
-        return HStack {
-            Text(editing ? "DRAG ☰ TO REORDER" : "INTERVALS")
-                .font(.caption.weight(.semibold)).tracking(1.5)
-                .foregroundStyle(theme.ink.opacity(0.4))
+        HStack {
+            kicker("INTERVALS · ×\(repeats)", theme)
             Spacer()
-            if intervals.count > 1 {
-                Button {
-                    withAnimation { editMode = editing ? .inactive : .active }
-                } label: {
-                    Text(editing ? "Done" : "Reorder")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color(hex: Palette.primary))
-                }
-                .buttonStyle(.plain)
-            }
         }
+        .padding(.top, 6)
         .plainRow()
     }
 
+    private func kicker(_ text: String, _ theme: ThemeColors) -> some View {
+        Text(text).font(.system(size: 11, weight: .semibold)).tracking(1.5)
+            .foregroundStyle(theme.inkLabel)
+    }
+
     private func nameRow(_ theme: ThemeColors) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("NAME").font(.caption.weight(.semibold)).tracking(1.5)
-                .foregroundStyle(theme.ink.opacity(0.4))
+        VStack(alignment: .leading, spacing: 8) {
+            kicker("NAME", theme)
             TextField("e.g. Morning HIIT", text: $name)
-                .font(.title3.weight(.semibold)).foregroundStyle(theme.ink)
+                .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.ink)
         }
-        .padding(16).panel().plainRow()
+        .padding(16).card().plainRow()
     }
 
     private func roundsRow(_ theme: ThemeColors) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("ROUNDS").font(.caption.weight(.semibold)).tracking(1.5)
-                    .foregroundStyle(theme.ink.opacity(0.4))
-                Text("Repeat the sequence").font(.subheadline).foregroundStyle(theme.ink.opacity(0.5))
+                Text("Rounds").font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.ink)
+                Text("Repeat all intervals").font(.system(size: 14)).foregroundStyle(theme.inkMuted)
             }
             Spacer()
             HStack(spacing: 12) {
                 stepper("minus", theme) { repeats = max(1, repeats - 1) }
-                Text("\(repeats)").font(.title3.weight(.bold)).monospacedDigit()
+                Text("\(repeats)").font(.system(size: 20, weight: .bold)).monospacedDigit()
                     .foregroundStyle(theme.ink).frame(width: 32)
                 stepper("plus", theme) { repeats = min(99, repeats + 1) }
             }
         }
-        .padding(16).panel().plainRow()
+        .padding(16).card().plainRow()
     }
 
     private func intervalRow(_ interval: Binding<Interval>, theme: ThemeColors) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             Button { colorEditing = interval.wrappedValue.id } label: {
                 Circle().fill(Color(hex: interval.wrappedValue.color))
-                    .frame(width: 28, height: 28)
+                    .frame(width: 26, height: 26)
                     .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
             }
             .buttonStyle(.plain)
             TextField("Label", text: interval.label)
-                .font(.body.weight(.semibold)).foregroundStyle(theme.ink)
-            Spacer()
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.ink)
+            Spacer(minLength: 4)
             Button { durationEditing = interval.wrappedValue.id } label: {
                 Text(TimerEngineMath.formatSeconds(interval.wrappedValue.seconds))
-                    .font(.subheadline.weight(.semibold)).monospacedDigit()
+                    .font(.system(size: 15, weight: .bold)).monospacedDigit()
                     .foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(Capsule().fill(theme.glassFill))
-                    .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(Capsule().fill(theme.ink.opacity(0.08)))
             }
             .buttonStyle(.plain)
+            // Decorative: the row itself reorders on long-press drag (List .onMove).
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 15))
+                .foregroundStyle(theme.ink.opacity(0.32))
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .panel(radius: 24)
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .card(radius: 20)
         .plainRow()
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { removeInterval(interval.wrappedValue.id) } label: {
@@ -201,51 +193,56 @@ struct WorkoutEditorScreen: View {
         }
     }
 
+    /// Warm up + cool down share one card, split by a hairline (both are once-only).
+    private func extrasCard(_ theme: ThemeColors) -> some View {
+        VStack(spacing: 0) {
+            extraRow(.warmup, seconds: $warmupSeconds, color: $warmupColor, theme: theme)
+            Divider().opacity(0.4).padding(.horizontal, 14)
+            extraRow(.cooldown, seconds: $cooldownSeconds, color: $cooldownColor, theme: theme)
+        }
+        .card()
+        .plainRow()
+    }
+
     private func extraRow(_ segment: ExtraSegment, seconds: Binding<Int>, color: Binding<String>, theme: ThemeColors) -> some View {
         let enabled = Binding(
             get: { seconds.wrappedValue > 0 },
             set: { seconds.wrappedValue = $0 ? ExtraSegment.defaultSeconds : 0 }
         )
-        return HStack(spacing: 10) {
+        return HStack(spacing: 14) {
             Button { extraColorEditing = segment } label: {
                 Circle().fill(Color(hex: color.wrappedValue))
-                    .frame(width: 28, height: 28)
-                    .overlay(Circle().strokeBorder(.white.opacity(0.8), lineWidth: 2))
-                    .opacity(enabled.wrappedValue ? 1 : 0.35)
+                    .frame(width: 14, height: 14)
+                    .opacity(enabled.wrappedValue ? 1 : 0.4)
             }
             .buttonStyle(.plain)
             .disabled(!enabled.wrappedValue)
             Text(segment.label)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(enabled.wrappedValue ? theme.ink : theme.ink.opacity(0.4))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(enabled.wrappedValue ? theme.ink : theme.ink.opacity(0.5))
             Spacer()
             if enabled.wrappedValue {
                 Button { extraEditing = segment } label: {
                     Text(TimerEngineMath.formatSeconds(seconds.wrappedValue))
-                        .font(.subheadline.weight(.semibold)).monospacedDigit()
-                        .foregroundStyle(theme.ink)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Capsule().fill(theme.glassFill))
-                        .overlay(Capsule().strokeBorder(theme.glassBorder, lineWidth: 1))
+                        .font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                        .foregroundStyle(theme.inkMuted)
                 }
                 .buttonStyle(.plain)
             }
             Toggle("", isOn: enabled)
                 .labelsHidden()
-                .tint(Color(hex: Palette.primary))
+                .tint(theme.accent)
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .panel(radius: 24)
-        .plainRow()
+        .padding(.horizontal, 14).padding(.vertical, 12)
     }
 
     private func addButton(_ theme: ThemeColors) -> some View {
         Button(action: addInterval) {
-            Text("+ Add interval").font(.body.weight(.semibold))
-                .foregroundStyle(theme.ink.opacity(0.5))
-                .frame(maxWidth: .infinity).padding(.vertical, 14)
-                .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(theme.ink.opacity(0.15), style: StrokeStyle(lineWidth: 2, dash: [6])))
+            Text("+ Add interval").font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(theme.accentText)
+                .frame(maxWidth: .infinity).padding(.vertical, 18)
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6])))
         }
         .buttonStyle(.plain)
         .plainRow()
@@ -255,28 +252,43 @@ struct WorkoutEditorScreen: View {
         let total = TimerEngineMath.totalDuration(
             intervals: intervals, repeats: repeats,
             warmupSeconds: warmupSeconds, cooldownSeconds: cooldownSeconds)
-        return VStack(spacing: 8) {
-            IntervalMixBar(intervals: intervals, height: 8)
-            Text("Total: \(TimerEngineMath.formatSeconds(total)) · \(repeats) \(repeats == 1 ? "round" : "rounds")")
-                .font(.subheadline.weight(.medium)).foregroundStyle(theme.ink.opacity(0.5))
+        return VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(totalCaption).font(.system(size: 13)).foregroundStyle(theme.inkMuted)
+                Spacer()
+                Text(TimerEngineMath.formatSeconds(total))
+                    .font(.system(size: 20, weight: .bold)).monospacedDigit()
+                    .foregroundStyle(theme.ink)
+            }
+            .padding(.top, 20)
             if existing != nil {
                 Button(role: .destructive) { showDeleteConfirm = true } label: {
-                    Text("Delete workout").font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.pink)
+                    Text("Delete workout").font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.destructive)
+                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain).padding(.top, 8)
+                .buttonStyle(.plain).padding(.top, 24)
             }
         }
-        .padding(.top, 8)
+        .padding(.bottom, 24)
         .plainRow()
+    }
+
+    /// "Total", plus which once-only segments are folded into the number.
+    private var totalCaption: String {
+        switch (warmupSeconds > 0, cooldownSeconds > 0) {
+        case (true, true): return "Total · warm up + cool down included"
+        case (true, false): return "Total · warm up included"
+        case (false, true): return "Total · cool down included"
+        case (false, false): return "Total"
+        }
     }
 
     private func stepper(_ icon: String, _ theme: ThemeColors, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon).font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(theme.ink).frame(width: 36, height: 36)
-                .background(Circle().fill(theme.glassFill))
-                .overlay(Circle().strokeBorder(theme.glassBorder, lineWidth: 1))
+                .foregroundStyle(theme.accentText).frame(width: 36, height: 36)
+                .background(Circle().fill(theme.ink.opacity(0.09)))
         }
         .buttonStyle(.plain)
     }

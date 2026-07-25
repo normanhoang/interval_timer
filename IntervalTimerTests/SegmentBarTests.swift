@@ -1,0 +1,170 @@
+import XCTest
+import SwiftUI
+@testable import IntervalTimer
+
+/// The running pill must *fill* from its leading edge: the lit part gets a flat
+/// trailing edge. Drawing it as its own capsule instead rounds that edge, which
+/// reads as a small vertical bar sliding right rather than a pill filling up.
+final class SegmentBarTests: XCTestCase {
+
+    @MainActor
+    func testRunningSliceFillsWithAFlatTrailingEdge() throws {
+        // 4 equal segments across 800pt, 1pt seams → slices 199.25 wide.
+        // Slice 1 spans x 200.25…399.5; half elapsed → lit through x ≈ 299.9.
+        let cg = try render(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                            width: 800, height: 40)
+
+        XCTAssertTrue(try isLit(cg, x: 210, y: 20), "running slice should be lit at its leading edge")
+        XCTAssertTrue(try isLit(cg, x: 296, y: 4),
+                      "lit part must reach the top row just inside the trailing edge")
+        XCTAssertTrue(try isLit(cg, x: 296, y: 36),
+                      "lit part must reach the bottom row just inside the trailing edge")
+        XCTAssertFalse(try isLit(cg, x: 340, y: 20), "the rest of the running slice stays washed out")
+        XCTAssertTrue(try isLit(cg, x: 100, y: 20), "finished slices read full")
+        XCTAssertFalse(try isLit(cg, x: 500, y: 20), "future slices read washed out")
+    }
+
+    /// The slices are square and abut; only the bar's outer ends are rounded, so
+    /// the whole thing reads as a single pill.
+    @MainActor
+    func testBarIsOnePillWithSquareSlices() throws {
+        let cg = try render(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                            width: 800, height: 40)
+
+        XCTAssertFalse(try isPainted(cg, x: 1, y: 1), "the bar's leading corner is clipped away")
+        XCTAssertTrue(try isPainted(cg, x: 1, y: 20), "the leading cap is painted at mid-height")
+        // Either side of the seam between slice 1 and slice 2, at the top row: square
+        // slices paint right up to the seam, capsule-shaped ones would not.
+        XCTAssertTrue(try isPainted(cg, x: 398, y: 1), "slice 1 is square at its trailing end")
+        XCTAssertTrue(try isPainted(cg, x: 402, y: 1), "slice 2 is square at its leading end")
+    }
+
+    /// Flood draws every slice in the same white over the interval ground, so its
+    /// dividers are the only division there. They're deliberately a light grey, so
+    /// the floor here is low — but a divider that stops being drawn reads as exactly
+    /// 1.0, and that is what this guards.
+    @MainActor
+    func testFloodDividersContrastAgainstTheTrack() throws {
+        // 4 equal segments across 800pt, abutting → boundaries at 200/400/600.
+        // Slice 1 is half elapsed, so the 600 divider and x 500 are both washed out.
+        let cg = try renderFlood(segments: segments(4), index: 1, elapsedFraction: 0.5,
+                                 width: 800, height: 40)
+
+        let divider = try luminance(cg, x: 600, y: 20)
+        let track = try luminance(cg, x: 500, y: 20)
+        let lit = try luminance(cg, x: 250, y: 20)
+        XCTAssertGreaterThan(contrast(track, divider), 1.15,
+                             "dividers must stay distinguishable from the washed-out track")
+        XCTAssertGreaterThan(contrast(lit, track), 1.5,
+                             "the lit part must still read brighter than the track")
+    }
+
+    /// Regression: dividers used to cost slice width, and were dropped whenever the
+    /// narrowest slice fell under 4pt. Tabata's 3s pre-roll measures 3.96pt on an
+    /// iPhone 15's 353pt bar and 4.22pt on the 414pt device the shots were taken on
+    /// — so Flood lost its divisions on the phone and kept them everywhere we looked.
+    @MainActor
+    func testFloodDividersSurviveAPhoneWidthBar() throws {
+        let tabata = TimerEngineMath.flattenWorkout(
+            intervals: [Interval(label: "Work", seconds: 20, color: Palette.work),
+                        Interval(label: "Rest", seconds: 10, color: Palette.rest)],
+            repeats: 8, prerollSeconds: 3)
+        // 353pt bar, 243s total → pre-roll slice 4.36pt (divider x 3.4…5.4), work
+        // slice 29.05 (divider x 32.4…34.4). A divider is measured against the slices
+        // either side of it, since those differ: elapsed slices are white, later ones
+        // washed out.
+        let cg = try renderFlood(segments: tabata, index: 1, elapsedFraction: 0.5,
+                                 width: 353, height: 10)
+
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 2, y: 5), try luminance(cg, x: 4, y: 5)), 1.15,
+                             "the pre-roll divider must still be drawn at phone width")
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 8, y: 5), try luminance(cg, x: 4, y: 5)), 1.15,
+                             "…and read against the slice after it")
+        XCTAssertGreaterThan(contrast(try luminance(cg, x: 29, y: 5), try luminance(cg, x: 33, y: 5)), 1.15,
+                             "the work/rest divider reads against the washed-out track too")
+    }
+
+    /// Too many segments for hairline seams: they're dropped rather than eating
+    /// the slices, and the bar still fills.
+    @MainActor
+    func testDenseWorkoutDropsTheSeams() throws {
+        // 200 segments across 300pt — 1pt seams would leave slices half a point wide.
+        let cg = try render(segments: segments(200), index: 100, elapsedFraction: 0.5,
+                            width: 300, height: 10)
+
+        XCTAssertTrue(try isLit(cg, x: 100, y: 5), "elapsed part is lit")
+        XCTAssertTrue(try isLit(cg, x: 140, y: 5), "lit through ~50% of the run")
+        XCTAssertFalse(try isLit(cg, x: 250, y: 5), "remaining part stays washed out")
+    }
+
+    // MARK: helpers
+
+    private func segments(_ count: Int, seconds: Int = 10) -> [Segment] {
+        (0..<count).map { i in
+            Segment(label: "S\(i)", seconds: seconds, color: "#FF0000",
+                    round: 1, rounds: 1, intervalIndex: i, startsAt: i * seconds)
+        }
+    }
+
+    /// Flood over the ground the bar actually sits on, mid-gradient.
+    @MainActor
+    private func renderFlood(segments: [Segment], index: Int, elapsedFraction: Double,
+                             width: CGFloat, height: CGFloat) throws -> CGImage {
+        let bar = SegmentBar(segments: segments, index: index,
+                             elapsedFraction: elapsedFraction, flood: true, height: height)
+            .frame(width: width, height: height)
+            .background(Color(hex: Palette.floodHexes(Palette.work)[1]))
+        let renderer = ImageRenderer(content: bar)
+        renderer.scale = 1
+        return try XCTUnwrap(try XCTUnwrap(renderer.uiImage).cgImage)
+    }
+
+    @MainActor
+    private func render(segments: [Segment], index: Int, elapsedFraction: Double,
+                        width: CGFloat, height: CGFloat) throws -> CGImage {
+        let bar = SegmentBar(segments: segments, index: index,
+                             elapsedFraction: elapsedFraction, flood: false, height: height)
+            .frame(width: width, height: height)
+            .background(Color.black)
+        let renderer = ImageRenderer(content: bar)
+        renderer.scale = 1
+        let image = try XCTUnwrap(renderer.uiImage)
+        return try XCTUnwrap(image.cgImage)
+    }
+
+    /// Lit = the segment color at full strength; washed-out draws it at 0.3 over black.
+    private func isLit(_ image: CGImage, x: Int, y: Int) throws -> Bool {
+        let pixel = try XCTUnwrap(pixelRGBA(image, x: x, y: y))
+        return pixel.r > 0.7 && pixel.g < 0.3 && pixel.b < 0.3
+    }
+
+    private func luminance(_ image: CGImage, x: Int, y: Int) throws -> Double {
+        let p = try XCTUnwrap(pixelRGBA(image, x: x, y: y))
+        return 0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b
+    }
+
+    /// WCAG's ratio shape on plain (un-linearized) luminance — enough to compare
+    /// two tones of the same bar against each other.
+    private func contrast(_ a: Double, _ b: Double) -> Double {
+        (max(a, b) + 0.05) / (min(a, b) + 0.05)
+    }
+
+    /// Any bar pixel, lit or washed out — the black backdrop shows through elsewhere.
+    private func isPainted(_ image: CGImage, x: Int, y: Int) throws -> Bool {
+        try XCTUnwrap(pixelRGBA(image, x: x, y: y)).r > 0.1
+    }
+
+    private func pixelRGBA(_ image: CGImage, x: Int, y: Int) -> (r: Double, g: Double, b: Double, a: Double)? {
+        guard x >= 0, y >= 0, x < image.width, y < image.height else { return nil }
+        var data = [UInt8](repeating: 0, count: 4)
+        guard let ctx = CGContext(data: &data, width: 1, height: 1,
+                                  bitsPerComponent: 8, bytesPerRow: 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        ctx.draw(image, in: CGRect(x: -x, y: y - image.height + 1,
+                                   width: image.width, height: image.height))
+        return (Double(data[0]) / 255, Double(data[1]) / 255,
+                Double(data[2]) / 255, Double(data[3]) / 255)
+    }
+}

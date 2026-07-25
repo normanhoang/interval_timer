@@ -66,6 +66,38 @@ enum CalendarMath {
         return streak
     }
 
+    /// Longest run of consecutive workout days ever recorded ("Best: 7 days").
+    static func bestStreak(_ markedDays: Set<String>) -> Int {
+        let dates = markedDays.compactMap(date(fromKey:)).sorted()
+        guard !dates.isEmpty else { return 0 }
+        var best = 1
+        var run = 1
+        for i in 1..<dates.count {
+            let gap = calendar.dateComponents([.day], from: dates[i - 1], to: dates[i]).day ?? 0
+            run = gap == 1 ? run + 1 : 1
+            best = max(best, run)
+        }
+        return best
+    }
+
+    /// Inverse of `dayKey` — local midnight for a "2026-06-12" key.
+    static func date(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        var comps = DateComponents()
+        comps.year = parts[0]
+        comps.month = parts[1]
+        comps.day = parts[2]
+        return calendar.date(from: comps)
+    }
+
+    /// The seven days of `date`'s week, Sunday-first (History week strip).
+    static func weekDays(containing date: Date = .now) -> [Date] {
+        let start = calendar.date(byAdding: .day, value: -(calendar.component(.weekday, from: date) - 1),
+                                  to: calendar.startOfDay(for: date)) ?? date
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+    }
+
     static func monthTitle(year: Int, month: Int) -> String {
         var comps = DateComponents()
         comps.year = year

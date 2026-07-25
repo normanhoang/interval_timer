@@ -65,18 +65,28 @@ final class Session {
     var workoutName: String
     var totalSeconds: Int
     var completedAt: Date
+    /// Completion detail for the History row — nil on sessions recorded before 1.7.
+    var completedIntervals: Int?
+    var totalIntervals: Int?
+    var pauseCount: Int?
 
     init(
         uuid: UUID = UUID(),
         workoutId: UUID,
         workoutName: String,
         totalSeconds: Int,
-        completedAt: Date = .now
+        completedAt: Date = .now,
+        completedIntervals: Int? = nil,
+        totalIntervals: Int? = nil,
+        pauseCount: Int? = nil
     ) {
         self.uuid = uuid
         self.workoutId = workoutId
         self.workoutName = workoutName
         self.totalSeconds = totalSeconds
         self.completedAt = completedAt
+        self.completedIntervals = completedIntervals
+        self.totalIntervals = totalIntervals
+        self.pauseCount = pauseCount
     }
 }

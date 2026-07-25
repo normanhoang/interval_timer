@@ -36,14 +36,21 @@ struct SessionDTO {
     var workoutName: String
     var totalSeconds: Int
     var completedAt: Date
+    var completedIntervals: Int?
+    var totalIntervals: Int?
+    var pauseCount: Int?
 
     init(uuid: UUID = UUID(), workoutId: UUID, workoutName: String,
-         totalSeconds: Int, completedAt: Date = .now) {
+         totalSeconds: Int, completedAt: Date = .now,
+         completedIntervals: Int? = nil, totalIntervals: Int? = nil, pauseCount: Int? = nil) {
         self.uuid = uuid
         self.workoutId = workoutId
         self.workoutName = workoutName
         self.totalSeconds = totalSeconds
         self.completedAt = completedAt
+        self.completedIntervals = completedIntervals
+        self.totalIntervals = totalIntervals
+        self.pauseCount = pauseCount
     }
 
     func toDictionary() -> [String: Any] {
@@ -53,7 +60,10 @@ struct SessionDTO {
             SyncKeys.sessionWorkoutName: workoutName,
             SyncKeys.sessionTotalSeconds: totalSeconds,
             SyncKeys.sessionCompletedAt: completedAt,
-        ]
+            SyncKeys.sessionCompletedIntervals: completedIntervals as Any,
+            SyncKeys.sessionTotalIntervals: totalIntervals as Any,
+            SyncKeys.sessionPauseCount: pauseCount as Any,
+        ].compactMapValues { $0 is NSNull ? nil : $0 }
     }
 
     init?(userInfo: [String: Any]) {
@@ -66,6 +76,9 @@ struct SessionDTO {
               let completedAt = userInfo[SyncKeys.sessionCompletedAt] as? Date
         else { return nil }
         self.init(uuid: uuid, workoutId: workoutId, workoutName: workoutName,
-                  totalSeconds: totalSeconds, completedAt: completedAt)
+                  totalSeconds: totalSeconds, completedAt: completedAt,
+                  completedIntervals: userInfo[SyncKeys.sessionCompletedIntervals] as? Int,
+                  totalIntervals: userInfo[SyncKeys.sessionTotalIntervals] as? Int,
+                  pauseCount: userInfo[SyncKeys.sessionPauseCount] as? Int)
     }
 }
