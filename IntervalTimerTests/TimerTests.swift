@@ -133,6 +133,43 @@ final class TimerTests: XCTestCase {
         XCTAssertEqual(pos.index, 0); XCTAssertEqual(pos.remaining, 0); XCTAssertTrue(pos.done)
     }
 
+    // MARK: TimerEngine lifecycle
+
+    func testEngineUsesInjectedMonotonicTimeAcrossPauseAndResume() {
+        var uptime = 100.0
+        let segments = [
+            Segment(label: "Work", seconds: 10, color: "#fff", round: 1,
+                    rounds: 1, intervalIndex: 0, startsAt: 0),
+            Segment(label: "Rest", seconds: 10, color: "#000", round: 1,
+                    rounds: 1, intervalIndex: 1, startsAt: 10),
+        ]
+        let engine = TimerEngine(segments: segments, now: { uptime })
+        var finishCount = 0
+        engine.onFinish = { finishCount += 1 }
+
+        engine.start()
+        uptime = 104
+        engine.sync()
+        XCTAssertEqual(engine.remaining, 6)
+
+        engine.pause()
+        uptime = 109
+        engine.sync()
+        XCTAssertEqual(engine.remaining, 6)
+
+        engine.resume()
+        uptime = 115
+        engine.sync()
+        XCTAssertEqual(engine.index, 1)
+        XCTAssertEqual(engine.remaining, 10)
+
+        uptime = 125
+        engine.sync()
+        engine.sync()
+        XCTAssertEqual(engine.phase, .done)
+        XCTAssertEqual(finishCount, 1)
+    }
+
     // MARK: formatSeconds
 
     func testFormatSeconds() {

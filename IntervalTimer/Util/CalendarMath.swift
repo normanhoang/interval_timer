@@ -98,6 +98,16 @@ enum CalendarMath {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
     }
 
+    /// How many of `dates` fall in the same Sunday-first week as `now` — the
+    /// exact week the History strip draws, so the "this week" tile agrees with it.
+    static func countInCurrentWeek(_ dates: some Sequence<Date>, now: Date = .now) -> Int {
+        let week = weekDays(containing: now)
+        guard let start = week.first, let last = week.last,
+              let end = calendar.date(byAdding: .day, value: 1, to: last)
+        else { return 0 }
+        return dates.filter { $0 >= start && $0 < end }.count
+    }
+
     static func monthTitle(year: Int, month: Int) -> String {
         var comps = DateComponents()
         comps.year = year

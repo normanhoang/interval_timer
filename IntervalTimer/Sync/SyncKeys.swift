@@ -17,13 +17,24 @@ enum SyncKeys {
     /// audio (watch silences its own speaker while true).
     static let cuePhoneAudio = "cue.phoneAudio"
 
-    // Finished-session userInfo transfer (watch → phone). Plist-safe values only.
-    static let sessionUUID = "session.uuid"
-    static let sessionWorkoutId = "session.workoutId"
-    static let sessionWorkoutName = "session.workoutName"
-    static let sessionTotalSeconds = "session.totalSeconds"
-    static let sessionCompletedAt = "session.completedAt"
-    static let sessionCompletedIntervals = "session.completedIntervals"
-    static let sessionTotalIntervals = "session.totalIntervals"
-    static let sessionPauseCount = "session.pauseCount"
+    /// JSON-encoded `SessionDTO` for a finished watch run (watch → phone).
+    /// `Data` is plist-safe, so one blob covers both sendMessage and
+    /// transferUserInfo without hand-mapping every field.
+    static let sessionPayload = "session.payload"
+
+    /// Pre-1.8 finished-session keys, one per field. Read-only: a transfer queued
+    /// by an older watch build can still be in WatchConnectivity's outbox when the
+    /// update lands, and dropping it would lose that run. Nothing writes these.
+    enum Legacy {
+        static let sessionUUID = "session.uuid"
+        static let sessionWorkoutId = "session.workoutId"
+        static let sessionWorkoutName = "session.workoutName"
+        static let sessionTotalSeconds = "session.totalSeconds"
+        static let sessionCompletedAt = "session.completedAt"
+        static let sessionCompletedIntervals = "session.completedIntervals"
+        static let sessionTotalIntervals = "session.totalIntervals"
+        static let sessionPauseCount = "session.pauseCount"
+        static let sessionWorkoutIntervals = "session.workoutIntervals"
+        static let sessionWorkoutRepeats = "session.workoutRepeats"
+    }
 }

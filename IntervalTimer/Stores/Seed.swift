@@ -4,7 +4,13 @@ import SwiftData
 /// Inserts two example workouts the first time the app launches with an empty store.
 @MainActor
 func seedIfNeeded(_ context: ModelContext) {
-    let existing = (try? context.fetch(FetchDescriptor<Workout>())) ?? []
+    let existing: [Workout]
+    do {
+        existing = try context.fetch(FetchDescriptor<Workout>())
+    } catch {
+        AppLog.persistence.error("Failed to check for existing workouts: \(error.localizedDescription, privacy: .public)")
+        return
+    }
     guard existing.isEmpty else { return }
 
     let now = Date.now
@@ -30,5 +36,5 @@ func seedIfNeeded(_ context: ModelContext) {
     )
     context.insert(tabata)
     context.insert(classic)
-    try? context.save()
+    context.saveOrRollback("Seed workouts")
 }

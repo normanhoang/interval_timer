@@ -13,8 +13,8 @@ Everything needed to fill out the App Store Connect listing for Interval Pulse T
 | Primary Category | Health & Fitness |
 | Secondary Category | Sports (optional) |
 | Team / Apple Developer | DZRPJF9JB6 |
-| Version (Marketing) | 1.7 |
-| Build number | 19 |
+| Version (Marketing) | 1.8 |
+| Build number | 20 |
 | Price | Free (or your choice) |
 | Copyright | © 2026 Norman Hoang |
 
@@ -89,6 +89,17 @@ hiit,interval timer,tabata,workout timer,fitness timer,circuit training,gym time
 ```
 Build any interval workout you can imagine — run it with a big countdown ring and haptic
 cues. 100% offline, no account needed.
+```
+
+## What's New (Version 1.8)
+
+```
+- History now remembers the workout as it was on the day you ran it, so
+  editing a workout no longer rewrites your past sessions.
+- Countdowns stay accurate when your iPhone locks or sleeps mid-run.
+- Finished Apple Watch runs are held safely until your iPhone confirms it
+  received them — no more sessions lost when the phone is out of range.
+- Clearer messages when a workout or history change can't be saved.
 ```
 
 ## What's New (Version 1.7)

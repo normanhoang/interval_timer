@@ -1,11 +1,12 @@
 import Foundation
 import Observation
 
-enum TimerPhase { case running, paused, done }
+enum TimerPhase: Equatable { case running, paused, done }
 
 /// Timestamp-based interval engine (port of RN lib/useIntervalTimer.ts).
-/// Elapsed is always recomputed from wall-clock minus accumulated pause time,
-/// so pauses and stalls never accumulate drift. A 100ms timer only triggers sync().
+/// Elapsed is always recomputed from a monotonic clock minus accumulated pause
+/// time, so pauses and stalls never accumulate drift. A 100ms timer only
+/// triggers sync().
 @Observable
 final class TimerEngine {
     private(set) var phase: TimerPhase = .running
@@ -25,25 +26,36 @@ final class TimerEngine {
 
     private let segments: [Segment]
     private let total: Int
+    private let now: () -> TimeInterval
 
-    private var startedAt = Date()
+    private var startedAt: TimeInterval
     private var pausedAccum: TimeInterval = 0
-    private var pausedAt: Date?
+    private var pausedAt: TimeInterval?
     private var lastIndex = 0
     private var lastWhole = 0
     private var finished = false
     private var ticker: Timer?
 
-    init(segments: [Segment]) {
+    /// Monotonic *and* sleep-inclusive: CLOCK_MONOTONIC_RAW keeps counting while
+    /// the device is asleep (unlike `systemUptime`/CLOCK_UPTIME_RAW, which would
+    /// stall a locked run) and is immune to wall-clock adjustments (unlike `Date`).
+    /// Matches the wall-clock dates the Live Activity's countdown is built from.
+    static func continuousTime() -> TimeInterval {
+        Double(clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW)) / 1_000_000_000
+    }
+
+    init(segments: [Segment], now: @escaping () -> TimeInterval = TimerEngine.continuousTime) {
         self.segments = segments
         self.total = TimerEngineMath.totalOfSegments(segments)
+        self.now = now
+        self.startedAt = now()
         self.remaining = segments.first?.seconds ?? 0
         self.lastWhole = segments.first?.seconds ?? 0
         self.totalRemaining = Double(total)
     }
 
     func start() {
-        startedAt = Date()
+        startedAt = now()
         pausedAccum = 0
         pausedAt = nil
         startTicker()
@@ -63,11 +75,14 @@ final class TimerEngine {
     }
 
     private func elapsedNow() -> Double {
-        let pausedMs = pausedAccum + (pausedAt.map { Date().timeIntervalSince($0) } ?? 0)
-        return Date().timeIntervalSince(startedAt) - pausedMs
+        let current = now()
+        let pausedSeconds = pausedAccum + (pausedAt.map { current - $0 } ?? 0)
+        return current - startedAt - pausedSeconds
     }
 
-    private func sync() {
+    /// Driven by the 100ms ticker; internal (not private) so tests can step the
+    /// injected clock and advance the engine deterministically.
+    func sync() {
         let elapsed = elapsedNow()
         let pos = TimerEngineMath.segmentAt(segments, elapsed: elapsed)
         if pos.done {
@@ -111,16 +126,17 @@ final class TimerEngine {
     }
 
     private func setElapsed(_ seconds: Double) {
-        let pausedMs = pausedAccum + (pausedAt.map { Date().timeIntervalSince($0) } ?? 0)
-        startedAt = Date().addingTimeInterval(-pausedMs - seconds)
+        let current = now()
+        let pausedSeconds = pausedAccum + (pausedAt.map { current - $0 } ?? 0)
+        startedAt = current - pausedSeconds - seconds
         sync()
     }
 
     func pause() {
         guard phase == .running else { return }
-        pausedAt = Date()
+        pausedAt = now()
         phase = .paused
-        // Elapsed is wall-clock based, so the ticker can stop while paused
+        // Elapsed is timestamp based, so the ticker can stop while paused
         // (nothing changes) and restart on resume with zero drift.
         stop()
     }
@@ -128,7 +144,7 @@ final class TimerEngine {
     func resume() {
         guard phase == .paused else { return }
         if let pausedAt {
-            pausedAccum += Date().timeIntervalSince(pausedAt)
+            pausedAccum += now() - pausedAt
             self.pausedAt = nil
         }
         phase = .running

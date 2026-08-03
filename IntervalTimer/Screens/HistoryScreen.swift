@@ -11,6 +11,7 @@ struct HistoryScreen: View {
     @State private var showClearConfirm = false
     @State private var showMonth = false
     @State private var detailSession: Session?
+    @State private var saveFailed = false
 
     /// dayKey → sessions that day, for the week strip's volume dots.
     private var sessionsByDay: [String: Int] {
@@ -30,8 +31,7 @@ struct HistoryScreen: View {
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
-        let weekAgo = Date.now.addingTimeInterval(-7 * 24 * 60 * 60)
-        let thisWeek = sessions.filter { $0.completedAt >= weekAgo }.count
+        let thisWeek = CalendarMath.countInCurrentWeek(sessions.lazy.map(\.completedAt))
         let streak = CalendarMath.streakLength(markedDays)
 
         NavigationStack {
@@ -69,6 +69,7 @@ struct HistoryScreen: View {
         } message: {
             Text("Remove sessions for one day, or everything.")
         }
+        .saveErrorAlert("Couldn’t update history", isPresented: $saveFailed)
     }
 
     private func header(_ theme: ThemeColors) -> some View {
@@ -205,6 +206,9 @@ struct HistoryScreen: View {
     /// The workout's first interval color; falls back to the accent once the
     /// workout itself has been deleted.
     private func spineColor(_ session: Session) -> Color {
+        if let first = session.workoutIntervals?.first {
+            return Color(hex: first.color)
+        }
         guard let workout = workouts.first(where: { $0.uuid == session.workoutId }),
               let first = workout.intervals.first else {
             return ThemeColors.for(scheme).accent
@@ -276,19 +280,25 @@ struct HistoryScreen: View {
     }
 
     private func delete(_ session: Session) {
-        context.delete(session); try? context.save()
+        context.delete(session)
+        saveChanges()
     }
 
     private func clearDay() {
         let day = selectedDay ?? CalendarMath.dayKey(.now)
         for s in sessions where CalendarMath.dayKey(s.completedAt) == day { context.delete(s) }
-        try? context.save()
-        selectedDay = nil
+        if saveChanges() { selectedDay = nil }
     }
 
     private func clearAll() {
         for s in sessions { context.delete(s) }
-        try? context.save()
-        selectedDay = nil
+        if saveChanges() { selectedDay = nil }
+    }
+
+    @discardableResult
+    private func saveChanges() -> Bool {
+        let saved = context.saveOrRollback("Update history")
+        saveFailed = !saved
+        return saved
     }
 }

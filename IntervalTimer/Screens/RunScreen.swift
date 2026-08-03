@@ -19,6 +19,7 @@ struct RunScreen: View {
     @State private var recorded = false
     @State private var showEndConfirm = false
     @State private var pauseCount = 0
+    @State private var saveFailed = false
 
     private let segments: [Segment]
     private let totalWorkout: Int
@@ -89,6 +90,12 @@ struct RunScreen: View {
             Button("Keep going", role: .cancel) {}
         } message: {
             Text("Progress won't be saved to history.")
+        }
+        .alert("Couldn’t save workout", isPresented: $saveFailed) {
+            Button("Retry") { retrySave() }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("This workout wasn’t added to History.")
         }
     }
 
@@ -439,13 +446,25 @@ struct RunScreen: View {
 
     private func recordSession() {
         guard !recorded else { return }
-        recorded = true
         context.insert(Session(workoutId: workout.uuid, workoutName: workout.name,
                                totalSeconds: totalWorkout,
                                completedIntervals: intervalCount,
                                totalIntervals: intervalCount,
-                               pauseCount: pauseCount))
-        try? context.save()
+                               pauseCount: pauseCount,
+                               workoutIntervals: workout.intervals,
+                               workoutRepeats: workout.repeats))
+        if context.saveOrRollback("Record session") {
+            recorded = true
+            saveFailed = false
+        } else {
+            saveFailed = true
+        }
+    }
+
+    /// Deferred a turn so the retry's own failure can't be swallowed by the
+    /// alert dismissal that SwiftUI performs alongside the button action.
+    private func retrySave() {
+        DispatchQueue.main.async { recordSession() }
     }
 }
 

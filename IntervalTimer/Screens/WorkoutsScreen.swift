@@ -9,6 +9,7 @@ struct WorkoutsScreen: View {
     @State private var editorTarget: EditorTarget?
     @State private var runTarget: Workout?
     @State private var showSettings = false
+    @State private var saveFailed = false
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
@@ -34,6 +35,7 @@ struct WorkoutsScreen: View {
         .fullScreenCover(item: $runTarget) { workout in
             RunScreen(workout: workout)
         }
+        .saveErrorAlert("Couldn’t save workouts", isPresented: $saveFailed)
     }
 
     private func header(_ theme: ThemeColors) -> some View {
@@ -116,8 +118,7 @@ struct WorkoutsScreen: View {
         var ordered = workouts
         ordered.move(fromOffsets: offsets, toOffset: destination)
         for (i, workout) in ordered.enumerated() { workout.order = i }
-        try? context.save()
-        PhoneSync.shared.pushWorkouts()
+        if saveChanges() { PhoneSync.shared.pushWorkouts() }
     }
 
     /// Overflow-menu action: copy a workout onto the end of the list.
@@ -134,14 +135,18 @@ struct WorkoutsScreen: View {
             cooldownColor: workout.cooldownColor,
             order: (workouts.map(\.order).max() ?? 0) + 1)
         context.insert(copy)
-        try? context.save()
-        PhoneSync.shared.pushWorkouts()
+        if saveChanges() { PhoneSync.shared.pushWorkouts() }
     }
 
     private func delete(_ workout: Workout) {
         context.delete(workout)
-        try? context.save()
-        PhoneSync.shared.pushWorkouts()
+        if saveChanges() { PhoneSync.shared.pushWorkouts() }
+    }
+
+    private func saveChanges() -> Bool {
+        let saved = context.saveOrRollback("Save workouts")
+        saveFailed = !saved
+        return saved
     }
 }
 

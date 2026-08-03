@@ -69,6 +69,10 @@ final class Session {
     var completedIntervals: Int?
     var totalIntervals: Int?
     var pauseCount: Int?
+    /// Workout definition at completion time — nil on sessions recorded before
+    /// 1.8, which fall back to the workout's current setup.
+    var workoutIntervals: [Interval]?
+    var workoutRepeats: Int?
 
     init(
         uuid: UUID = UUID(),
@@ -78,7 +82,9 @@ final class Session {
         completedAt: Date = .now,
         completedIntervals: Int? = nil,
         totalIntervals: Int? = nil,
-        pauseCount: Int? = nil
+        pauseCount: Int? = nil,
+        workoutIntervals: [Interval]? = nil,
+        workoutRepeats: Int? = nil
     ) {
         self.uuid = uuid
         self.workoutId = workoutId
@@ -88,5 +94,7 @@ final class Session {
         self.completedIntervals = completedIntervals
         self.totalIntervals = totalIntervals
         self.pauseCount = pauseCount
+        self.workoutIntervals = workoutIntervals
+        self.workoutRepeats = workoutRepeats
     }
 }

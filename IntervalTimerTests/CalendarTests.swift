@@ -106,6 +106,22 @@ final class CalendarTests: XCTestCase {
         XCTAssertEqual(CalendarMath.dayKey(week[6]), "2026-06-13")
     }
 
+    /// Must agree with `weekDays` (Sunday-first), not the locale's firstWeekday.
+    func testThisWeekUsesTheSameSundayFirstWeekAsTheStrip() {
+        let calendar = Calendar.current
+        let now = calendar.date(from: DateComponents(
+            year: 2026, month: 6, day: 10, hour: 12))! // Wednesday
+        let week = CalendarMath.weekDays(containing: now)
+        let dates = [
+            week[0].addingTimeInterval(60),                     // Sunday, in week
+            week[6].addingTimeInterval(23 * 60 * 60),           // Saturday, in week
+            week[0].addingTimeInterval(-60),                    // Saturday of prior week
+            week[6].addingTimeInterval(24 * 60 * 60),           // Sunday of next week
+        ]
+
+        XCTAssertEqual(CalendarMath.countInCurrentWeek(dates, now: now), 2)
+    }
+
     // MARK: addMonths (1-based month)
 
     func testAddMonthsWraps() {

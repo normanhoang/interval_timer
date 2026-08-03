@@ -9,6 +9,9 @@ final class WorkoutSessionController: NSObject, HKWorkoutSessionDelegate {
 
     private let store = HKHealthStore()
     private var session: HKWorkoutSession?
+    /// False once `end()` has run, so an authorization sheet answered after the
+    /// run is over doesn't start a session behind the user's back.
+    private var startWanted = false
 
     private override init() {}
 
@@ -19,20 +22,26 @@ final class WorkoutSessionController: NSObject, HKWorkoutSessionDelegate {
         return
         #else
         guard HKHealthStore.isHealthDataAvailable() else { return }
+        startWanted = true
         store.requestAuthorization(toShare: [.workoutType()], read: []) { [weak self] granted, _ in
-            guard granted, let self, self.session == nil else { return }
-            let config = HKWorkoutConfiguration()
-            config.activityType = .highIntensityIntervalTraining
-            config.locationType = .indoor
-            guard let session = try? HKWorkoutSession(healthStore: self.store, configuration: config) else { return }
-            session.delegate = self
-            self.session = session
-            session.startActivity(with: Date())
+            DispatchQueue.main.async {
+                guard let self, self.startWanted else { return }
+                guard granted, self.session == nil else { return }
+                let config = HKWorkoutConfiguration()
+                config.activityType = .highIntensityIntervalTraining
+                config.locationType = .indoor
+                guard let session = try? HKWorkoutSession(
+                    healthStore: self.store, configuration: config) else { return }
+                session.delegate = self
+                self.session = session
+                session.startActivity(with: Date())
+            }
         }
         #endif
     }
 
     func end() {
+        startWanted = false
         session?.end()
         session = nil
     }
@@ -40,7 +49,16 @@ final class WorkoutSessionController: NSObject, HKWorkoutSessionDelegate {
     // MARK: HKWorkoutSessionDelegate
 
     func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState,
-                        from fromState: HKWorkoutSessionState, date: Date) {}
+                        from fromState: HKWorkoutSessionState, date: Date) {
+        guard toState == .ended else { return }
+        DispatchQueue.main.async { [weak self] in
+            if self?.session === workoutSession { self?.session = nil }
+        }
+    }
 
-    func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {}
+    func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
+        DispatchQueue.main.async { [weak self] in
+            if self?.session === workoutSession { self?.session = nil }
+        }
+    }
 }

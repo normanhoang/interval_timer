@@ -116,9 +116,11 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ## Architecture (`IntervalTimer/`)
 
-- `IntervalTimerApp.swift` — `@main`, builds the SwiftData `ModelContainer` (wipes &
-  recreates the store if a schema change makes it unloadable — dev convenience), injects
-  `AppSettings`, applies `preferredColorScheme`, seeds on first launch.
+- `IntervalTimerApp.swift` — `@main` + `PersistenceBootstrap`, which opens the SwiftData
+  store and, when that fails, falls back to an in-memory container and shows
+  `StoreRecoveryView` in place of the app (with an opt-in destructive "Reset local data"
+  that deletes the store and reopens it — never automatic). Injects `AppSettings`, applies
+  `preferredColorScheme`, seeds on first launch.
 
 ### Models (`Models/`)
 - `Workout.swift` — `@Model Workout` (has `uuid`, `name`, `intervals: [Interval]`,
@@ -136,7 +138,10 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
   into `Segment`s with cumulative `startsAt`; `segmentAt(_:elapsed:)` (an elapsed exactly on a segment edge belongs to the
   **next** segment); `totalDuration`; `formatSeconds`.
 - `TimerEngine.swift` — `@Observable`, **timestamp-based**: elapsed is always recomputed
-  from `Date()` minus accumulated pause time, so pauses/stalls never drift. A 100ms `Timer`
+  from a monotonic clock (`CLOCK_MONOTONIC_RAW`, which keeps counting while the device
+  sleeps — `systemUptime` does not) minus accumulated pause time, so pauses/stalls never
+  drift and wall-clock changes can't jump the run. The clock is injectable for tests
+  (`init(segments:now:)`). A 100ms `Timer`
   only triggers `sync()`. Exposes `phase`, whole-second `remaining`, fractional `fraction`
   (drives the ring), `totalRemaining`, `pause/resume/skipNext/skipPrev`, and the
   `onSegmentChange` / `onCountdownTick` (last 3s) / `onFinish` callbacks (each fired as in
@@ -176,10 +181,14 @@ Releasing: bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`
 
 ### Sync (`Sync/`) — compiled into both targets
 - `WorkoutDTO.swift` — Codable wire formats: `WorkoutDTO` (mirrors `Workout`, phone→watch)
-  and `SessionDTO` (finished watch run, watch→phone; dictionary of plist-safe values for
-  `transferUserInfo`/`sendMessage`).
+  and `SessionDTO` (finished watch run, watch→phone). Both travel as a single JSON `Data`
+  blob (plist-safe) under one key, so no field-by-field mapping.
+- `SessionOutbox.swift` — thread-safe durable queue of `SessionDTO`s in UserDefaults. The
+  watch holds a finished run until WatchConnectivity confirms delivery
+  (`didFinish` for `transferUserInfo`, the reply for `sendMessage`); the phone holds a
+  received run under its own key until it's committed to the store.
 - `SyncKeys.swift` — payload key constants: applicationContext (includes a `Date`
-  revision because identical dictionaries aren't re-sent), finished-session transfer, and
+  revision because identical dictionaries aren't re-sent), `session.payload`, and
   the live cue relay (`cue.kind`/`cue.alert` watch→phone, `cue.phoneAudio` in the reply).
 
 ### Live Activity (`LiveActivity/` + `IntervalTimerWidgets/`)

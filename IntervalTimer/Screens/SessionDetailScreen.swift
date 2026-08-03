@@ -9,6 +9,9 @@ struct SessionDetailScreen: View {
     @Query(sort: \Workout.order) private var workouts: [Workout]
 
     private var workout: Workout? { workouts.first { $0.uuid == session.workoutId } }
+    private var displayIntervals: [Interval]? { session.workoutIntervals ?? workout?.intervals }
+    private var displayRepeats: Int? { session.workoutRepeats ?? workout?.repeats }
+    private var usesCurrentWorkout: Bool { session.workoutIntervals == nil && workout != nil }
 
     var body: some View {
         let theme = ThemeColors.for(scheme)
@@ -35,15 +38,19 @@ struct SessionDetailScreen: View {
                 }
                 .card()
 
-                if let workout {
+                if let intervals = displayIntervals, let repeats = displayRepeats {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("INTERVAL MIX")
+                        Text(usesCurrentWorkout ? "CURRENT INTERVAL MIX" : "INTERVAL MIX")
                             .font(.system(size: 11, weight: .semibold)).tracking(1.5)
                             .foregroundStyle(theme.inkLabel)
-                        IntervalMixBar(intervals: workout.intervals, height: 8)
-                        Text("\(workout.repeats) \(workout.repeats == 1 ? "round" : "rounds") · "
-                             + workout.intervals.map(\.label).joined(separator: " / "))
+                        IntervalMixBar(intervals: intervals, height: 8)
+                        Text("\(repeats) \(repeats == 1 ? "round" : "rounds") · "
+                             + intervals.map(\.label).joined(separator: " / "))
                             .font(.system(size: 13)).foregroundStyle(theme.inkMuted)
+                        if usesCurrentWorkout {
+                            Text("This session predates workout snapshots, so this is the workout’s current setup.")
+                                .font(.system(size: 12)).foregroundStyle(theme.inkFaint)
+                        }
                     }
                     .padding(16).card()
                 } else {

@@ -8,11 +8,15 @@ import WatchConnectivity
 final class PhoneSync: NSObject, WCSessionDelegate {
     static let shared = PhoneSync()
     private var container: ModelContainer?
+    /// Watch runs are held here until they're safely in the store, so a delivery
+    /// that arrives before the container exists (or that fails to insert) isn't lost.
+    private let inbox = SessionOutbox(storageKey: "sync.pendingIncomingSessions")
 
     private override init() {}
 
     func configure(container: ModelContainer) {
         self.container = container
+        flushInbox()
     }
 
     func activate() {
@@ -82,20 +86,45 @@ final class PhoneSync: NSObject, WCSessionDelegate {
     }
 
     private func ingestSession(_ payload: [String: Any]) {
-        guard let dto = SessionDTO(userInfo: payload), let container else { return }
+        guard let dto = SessionDTO(userInfo: payload) else { return }
+        inbox.enqueue(dto)
+        flushInbox()
+    }
+
+    private func flushInbox() {
+        guard let container else { return }
         Task { @MainActor in
             let context = container.mainContext
-            let uuid = dto.uuid
-            var descriptor = FetchDescriptor<Session>(predicate: #Predicate { $0.uuid == uuid })
-            descriptor.fetchLimit = 1
-            if let existing = try? context.fetch(descriptor), !existing.isEmpty { return }
-            context.insert(Session(uuid: dto.uuid, workoutId: dto.workoutId,
-                                   workoutName: dto.workoutName, totalSeconds: dto.totalSeconds,
-                                   completedAt: dto.completedAt,
-                                   completedIntervals: dto.completedIntervals,
-                                   totalIntervals: dto.totalIntervals,
-                                   pauseCount: dto.pauseCount))
-            try? context.save()
+            // Read inside the task: an overlapping flush may already have drained
+            // entries that were pending when this one was scheduled.
+            for dto in inbox.pending() {
+                let uuid = dto.uuid
+                var descriptor = FetchDescriptor<Session>(predicate: #Predicate { $0.uuid == uuid })
+                descriptor.fetchLimit = 1
+                do {
+                    if try !context.fetch(descriptor).isEmpty {
+                        inbox.remove(uuid: uuid)
+                        continue
+                    }
+                    context.insert(Session(uuid: uuid, workoutId: dto.workoutId,
+                                           workoutName: dto.workoutName, totalSeconds: dto.totalSeconds,
+                                           completedAt: dto.completedAt,
+                                           completedIntervals: dto.completedIntervals,
+                                           totalIntervals: dto.totalIntervals,
+                                           pauseCount: dto.pauseCount,
+                                           workoutIntervals: dto.workoutIntervals,
+                                           workoutRepeats: dto.workoutRepeats))
+                    try context.save()
+                    inbox.remove(uuid: uuid)
+                } catch {
+                    context.rollback()
+                    AppLog.watchSync.error(
+                        "Failed to ingest watch session: \(error.localizedDescription, privacy: .public)")
+                    // The store is unhappy right now (disk full, locked); the rest
+                    // of the queue would fail the same way. Keep them for next time.
+                    break
+                }
+            }
         }
     }
 }

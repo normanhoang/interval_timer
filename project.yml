@@ -8,8 +8,8 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "1.7"
-    CURRENT_PROJECT_VERSION: "19"
+    MARKETING_VERSION: "1.8"
+    CURRENT_PROJECT_VERSION: "20"
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: "DZRPJF9JB6"
     CODE_SIGN_STYLE: Automatic
@@ -62,6 +62,7 @@ targets:
       - path: IntervalTimer/Audio/Cues.swift
       - path: IntervalTimer/Audio/AlertSounds.swift
       - path: IntervalTimer/Stores/Settings.swift
+      - path: IntervalTimer/Util/AppLog.swift
       - path: IntervalTimer/Util/Encouragements.swift
       - path: IntervalTimer/Sync
       - path: IntervalTimer/Resources/Sounds

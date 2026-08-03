@@ -21,6 +21,7 @@ struct WorkoutEditorScreen: View {
     @State private var extraEditing: ExtraSegment?
     @State private var extraColorEditing: ExtraSegment?
     @State private var showDeleteConfirm = false
+    @State private var saveFailed = false
 
     private var existing: Workout? {
         if case .edit(let w) = target { return w }
@@ -92,6 +93,7 @@ struct WorkoutEditorScreen: View {
         } message: {
             Text("“\(existing?.name ?? "")” will be removed.")
         }
+        .saveErrorAlert("Couldn’t save workout", isPresented: $saveFailed)
     }
 
     // MARK: header
@@ -432,15 +434,25 @@ struct WorkoutEditorScreen: View {
                                    warmupColor: warmupColor, cooldownColor: cooldownColor,
                                    order: order))
         }
-        try? context.save()
-        PhoneSync.shared.pushWorkouts()
-        dismiss()
+        if saveChanges() {
+            PhoneSync.shared.pushWorkouts()
+            dismiss()
+        }
     }
 
     private func deleteWorkout() {
-        if let existing { context.delete(existing); try? context.save() }
-        PhoneSync.shared.pushWorkouts()
-        dismiss()
+        guard let existing else { return }
+        context.delete(existing)
+        if saveChanges() {
+            PhoneSync.shared.pushWorkouts()
+            dismiss()
+        }
+    }
+
+    private func saveChanges() -> Bool {
+        let saved = context.saveOrRollback("Save workout")
+        saveFailed = !saved
+        return saved
     }
 }
 

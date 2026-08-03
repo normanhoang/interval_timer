@@ -284,6 +284,7 @@ struct WatchRunView: View {
         recorded = true
         WatchSync.shared.sendSession(SessionDTO(
             workoutId: workout.uuid, workoutName: workout.name, totalSeconds: totalWorkout,
-            completedIntervals: intervalCount, totalIntervals: intervalCount, pauseCount: pauseCount))
+            completedIntervals: intervalCount, totalIntervals: intervalCount, pauseCount: pauseCount,
+            workoutIntervals: workout.intervals, workoutRepeats: workout.repeats))
     }
 }
